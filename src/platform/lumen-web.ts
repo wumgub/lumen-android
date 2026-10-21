@@ -23,7 +23,7 @@ import {
 } from './db'
 import { parseFile } from './metadata'
 
-const APP_VERSION = '0.1.1'
+const APP_VERSION = '0.1.2'
 const REPO = 'wumgub/lumen-android'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -48,6 +48,15 @@ const mediaBlobs = new Map<number, Blob>()
 const artBlobs = new Map<number, Blob>()
 const mediaUrls = new Map<number, string>()
 const artUrls = new Map<number, string>()
+
+interface AlbumCoverRow {
+  album: string
+  source: 'track' | 'custom'
+  trackId?: number
+  blob?: Blob
+}
+const albumCovers = new Map<string, AlbumCoverRow>()
+const albumUrls = new Map<string, string>() // album -> object URL (cache)
 
 let folders: string[] = []
 let playlistOrder: number[] = []
@@ -78,6 +87,9 @@ function init(): Promise<void> {
     for (const t of trackRows) tracks.set(t.id, t)
     for (const m of mediaRows) mediaBlobs.set(m.trackId, m.blob)
     for (const a of artRows) artBlobs.set(a.trackId, a.blob)
+
+    const coverRows = await idbGetAll<AlbumCoverRow>(STORES.albumCovers)
+    for (const c of coverRows) albumCovers.set(c.album, c)
 
     folders = await metaGet<string[]>('folders', [])
     playlistOrder = await metaGet<number[]>('playlistOrder', [])
@@ -138,6 +150,61 @@ function urlFor(map: Map<number, string>, blobs: Map<number, Blob>, id: number):
   const url = URL.createObjectURL(blob)
   map.set(id, url)
   return url
+}
+
+/** The art blob representing an album: an override if set, else its first
+ * art-bearing track (by disc/track number). */
+function resolveAlbumBlob(album: string): Blob | null {
+  const ov = albumCovers.get(album)
+  if (ov) {
+    if (ov.source === 'custom' && ov.blob) return ov.blob
+    if (ov.source === 'track' && ov.trackId != null) return artBlobs.get(ov.trackId) ?? null
+  }
+  let best: Track | null = null
+  for (const t of tracks.values()) {
+    if (t.album !== album || !t.hasArt) continue
+    if (
+      !best ||
+      (t.discNo ?? 0) - (best.discNo ?? 0) < 0 ||
+      ((t.discNo ?? 0) === (best.discNo ?? 0) &&
+        ((t.trackNo ?? 0) - (best.trackNo ?? 0) < 0 ||
+          ((t.trackNo ?? 0) === (best.trackNo ?? 0) && t.id < best.id)))
+    ) {
+      best = t
+    }
+  }
+  return best ? artBlobs.get(best.id) ?? null : null
+}
+
+/** Drop a cached album cover URL so the next render rebuilds it from current data. */
+function invalidateAlbum(album: string): void {
+  const u = albumUrls.get(album)
+  if (u) URL.revokeObjectURL(u)
+  albumUrls.delete(album)
+}
+
+/** Drop all cached album cover URLs (after an import that may shift defaults). */
+function invalidateAllAlbums(): void {
+  for (const u of albumUrls.values()) URL.revokeObjectURL(u)
+  albumUrls.clear()
+}
+
+/** Open a single-image file picker; resolves the chosen file or null if cancelled. */
+function pickImage(): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    let settled = false
+    const done = (b: Blob | null): void => {
+      if (settled) return
+      settled = true
+      resolve(b)
+    }
+    input.onchange = () => done(input.files && input.files[0] ? input.files[0] : null)
+    window.addEventListener('focus', () => setTimeout(() => done(null), 500), { once: true })
+    input.click()
+  })
 }
 
 // ---- querying / aggregation over the in-memory track mirror ----
@@ -242,6 +309,7 @@ const api: LumenApi = {
       await idbDelete(STORES.media, t.id)
       await idbDelete(STORES.art, t.id)
     }
+    invalidateAllAlbums()
   },
 
   async scan(): Promise<ScanResult> {
@@ -295,6 +363,7 @@ const api: LumenApi = {
       folders.push(label)
       await metaSet('folders', folders)
     }
+    invalidateAllAlbums() // new tracks may change an album's default cover
     emitScan({ phase: 'done', processed: files.length, total: files.length })
     return { added, updated: 0, total: tracks.size }
   },
@@ -498,6 +567,47 @@ const api: LumenApi = {
 
   artUrl(trackId: number): string {
     return urlFor(artUrls, artBlobs, trackId)
+  },
+
+  albumArtUrl(album: string): string {
+    const cached = albumUrls.get(album)
+    if (cached) return cached
+    const blob = resolveAlbumBlob(album)
+    if (!blob) return ''
+    const url = URL.createObjectURL(blob)
+    albumUrls.set(album, url)
+    return url
+  },
+
+  async setAlbumCoverFromTrack(album: string, trackId: number): Promise<void> {
+    await init()
+    const row: AlbumCoverRow = { album, source: 'track', trackId }
+    albumCovers.set(album, row)
+    await idbPut(STORES.albumCovers, row)
+    invalidateAlbum(album)
+  },
+
+  async setAlbumCoverCustom(album: string): Promise<boolean> {
+    await init()
+    const blob = await pickImage()
+    if (!blob) return false
+    const row: AlbumCoverRow = { album, source: 'custom', blob }
+    albumCovers.set(album, row)
+    await idbPut(STORES.albumCovers, row)
+    invalidateAlbum(album)
+    return true
+  },
+
+  async clearAlbumCover(album: string): Promise<void> {
+    await init()
+    albumCovers.delete(album)
+    await idbDelete(STORES.albumCovers, album)
+    invalidateAlbum(album)
+  },
+
+  async albumHasCover(album: string): Promise<boolean> {
+    await init()
+    return albumCovers.has(album)
   }
 }
 
