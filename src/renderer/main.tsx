@@ -1,0 +1,12 @@
+import '@platform/install' // installs window.lumen (web backend) before the app renders
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import './styles/themes.css'
+import './styles/app.css'
+
+createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
