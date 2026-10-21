@@ -23,7 +23,7 @@ import {
 } from './db'
 import { parseFile } from './metadata'
 
-const APP_VERSION = '0.1.0'
+const APP_VERSION = '0.1.1'
 const REPO = 'wumgub/lumen-android'
 
 const DEFAULT_SETTINGS: AppSettings = {

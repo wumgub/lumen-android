@@ -16,7 +16,11 @@ import {
   VolMute
 } from './icons'
 
-export function TransportBar(): React.ReactElement {
+export function TransportBar({
+  onExpandNowPlaying
+}: {
+  onExpandNowPlaying?: () => void
+} = {}): React.ReactElement {
   const p = usePlayer()
   const pct = p.duration > 0 ? (p.currentTime / p.duration) * 100 : 0
   const [showQueue, setShowQueue] = useState(false)
@@ -24,7 +28,11 @@ export function TransportBar(): React.ReactElement {
 
   return (
     <div className="transport">
-      <div className="transport-now">
+      <div
+        className="transport-now"
+        onClick={onExpandNowPlaying}
+        role={onExpandNowPlaying ? 'button' : undefined}
+      >
         {p.current ? (
           <>
             <Artwork trackId={p.current.id} hasArt={!!p.current.hasArt} className="transport-art" />
@@ -49,7 +57,7 @@ export function TransportBar(): React.ReactElement {
       <div className="transport-center">
         <div className="transport-buttons">
           <button
-            className={`icon-btn ${p.shuffle ? 'active' : ''}`}
+            className={`icon-btn transport-extra ${p.shuffle ? 'active' : ''}`}
             onClick={p.toggleShuffle}
             title="Shuffle"
           >
@@ -65,7 +73,7 @@ export function TransportBar(): React.ReactElement {
             <Next size={22} />
           </button>
           <button
-            className={`icon-btn ${p.repeat !== 'off' ? 'active' : ''}`}
+            className={`icon-btn transport-extra ${p.repeat !== 'off' ? 'active' : ''}`}
             onClick={p.cycleRepeat}
             title={`Repeat: ${p.repeat}`}
           >

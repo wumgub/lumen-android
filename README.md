@@ -8,6 +8,15 @@ sideloadable `.apk`.
 > **Targets Android 13+.** This is tuned for a modern WebView. It is *not* aimed
 > at ancient devices — the desktop app is the one for everything else.
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/library.png" width="210" alt="Song library with bottom tab bar and mini-player" />
+  <img src="docs/screenshots/nowplaying.png" width="210" alt="Full-screen now-playing sheet with visualizer" />
+  <img src="docs/screenshots/albums.png" width="210" alt="Albums grid" />
+  <img src="docs/screenshots/library-menu.png" width="210" alt="Library drawer with playlists and folders" />
+</p>
+
 ## Install
 
 1. Grab the latest `Lumen-*.apk` from the [Releases page](https://github.com/wumgub/lumen-android/releases/latest).
