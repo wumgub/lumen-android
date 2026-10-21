@@ -60,8 +60,17 @@ jobs:
       - name: Sync web assets
         run: npx cap sync android
 
-      # Debug-signed APK: installs fine for sideloading, and needs no signing
-      # secrets. (A release-signed build comes once this is proven on a phone.)
+      # Sign every build with the SAME debug key (committed at ci/debug.keystore),
+      # instead of the random one Gradle would generate per run. Android only
+      # allows installing an update over an existing app when the signature
+      # matches, so a stable key is what lets friends update in place. A debug
+      # keystore uses the well-known password "android" and grants no security —
+      # it's safe to commit; its only job here is a consistent signature.
+      - name: Use the shared debug signing key
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+
       - name: Build APK
         run: ./gradlew assembleDebug --no-daemon
         working-directory: android
