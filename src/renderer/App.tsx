@@ -9,7 +9,20 @@ import { ThemeSelector } from './components/ThemeSelector'
 import { SettingsModal } from './components/SettingsModal'
 import { VisualizerHost } from './components/VisualizerHost'
 import { VizToggle } from './components/VizToggle'
-import { Collapse, Gear, Pause, Play, Next, Prev, Search } from './components/icons'
+import {
+  Collapse,
+  Gear,
+  Pause,
+  Play,
+  Next,
+  Prev,
+  Search,
+  MusicNote,
+  Users,
+  Disc,
+  ListIcon
+} from './components/icons'
+import { formatTime } from './lib/format'
 import { VISUALIZER_LIST, isVisualizerId, type VisualizerId } from './visualizers'
 import type { View } from './types'
 
@@ -38,6 +51,9 @@ function Shell(): React.ReactElement {
   const [immersive, setImmersive] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [libraryVersion, setLibraryVersion] = useState(0)
+  // Phone layout only: the sidebar slides over as a drawer instead of being a
+  // permanent column. No effect on desktop, where the drawer CSS never applies.
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const player = usePlayer()
   const { current } = player
@@ -102,8 +118,14 @@ function Shell(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey)
   }, [player])
 
+  // On mobile, navigating from the drawer should close it.
+  const navigate = (v: View): void => {
+    setView(v)
+    setDrawerOpen(false)
+  }
+
   return (
-    <div className="app">
+    <div className={`app${drawerOpen ? ' drawer-open' : ''}`}>
       <div className="titlebar">
         <div className="titlebar-drag" />
         <div className="titlebar-brand">
@@ -131,10 +153,12 @@ function Shell(): React.ReactElement {
         </button>
       </div>
 
+      <div className="drawer-scrim" onClick={() => setDrawerOpen(false)} />
+
       <div className="body">
         <Sidebar
           view={view}
-          setView={setView}
+          setView={navigate}
           onLibraryChanged={() => setLibraryVersion((v) => v + 1)}
           libraryVersion={libraryVersion}
         />
@@ -157,7 +181,9 @@ function Shell(): React.ReactElement {
         />
       </div>
 
-      <TransportBar />
+      <TransportBar onExpandNowPlaying={() => setImmersive(true)} />
+
+      <MobileNav view={view} setView={setView} onOpenMenu={() => setDrawerOpen(true)} />
 
       {immersive && (
         <ImmersiveMode
@@ -178,6 +204,44 @@ function Shell(): React.ReactElement {
         />
       )}
     </div>
+  )
+}
+
+// Phone-only bottom tab bar (hidden by CSS on wider screens). The three library
+// destinations plus a Menu button that opens the sidebar drawer for playlists,
+// folders and rescanning.
+function MobileNav({
+  view,
+  setView,
+  onOpenMenu
+}: {
+  view: View
+  setView: (v: View) => void
+  onOpenMenu: () => void
+}): React.ReactElement {
+  const active = (kind: View['kind']): string => (view.kind === kind ? 'active' : '')
+  return (
+    <nav className="mobile-nav">
+      <button className={`mnav-item ${active('songs')}`} onClick={() => setView({ kind: 'songs' })}>
+        <MusicNote size={20} />
+        <span>Songs</span>
+      </button>
+      <button
+        className={`mnav-item ${active('artists')}`}
+        onClick={() => setView({ kind: 'artists' })}
+      >
+        <Users size={20} />
+        <span>Artists</span>
+      </button>
+      <button className={`mnav-item ${active('albums')}`} onClick={() => setView({ kind: 'albums' })}>
+        <Disc size={20} />
+        <span>Albums</span>
+      </button>
+      <button className="mnav-item" onClick={onOpenMenu}>
+        <ListIcon size={20} />
+        <span>Library</span>
+      </button>
+    </nav>
   )
 }
 
@@ -212,6 +276,22 @@ function ImmersiveMode({
         <div className="immersive-meta">
           <div className="im-title">{p.current?.title ?? 'Nothing playing'}</div>
           <div className="im-artist">{p.current?.artist ?? ''}</div>
+        </div>
+        <div className="im-seek">
+          <span className="time">{formatTime(p.currentTime)}</span>
+          <input
+            className="seek"
+            type="range"
+            min={0}
+            max={p.duration || 0}
+            step="0.1"
+            value={p.currentTime}
+            style={{
+              ['--pct' as string]: `${p.duration > 0 ? (p.currentTime / p.duration) * 100 : 0}%`
+            }}
+            onChange={(e) => p.seek(Number(e.target.value))}
+          />
+          <span className="time">{formatTime(p.duration)}</span>
         </div>
         <div className="immersive-controls">
           <button className="icon-btn" onClick={p.prev}>

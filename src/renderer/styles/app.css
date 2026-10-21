@@ -2163,3 +2163,141 @@ input[type='range']:hover::-webkit-slider-thumb {
   display: flex;
   gap: 6px;
 }
+
+/* ====================================================================
+   Phone layout (Android build). Desktop keeps its three-column grid;
+   below the breakpoint the sidebar becomes a slide-over drawer, the
+   now-playing panel is replaced by a bottom tab bar + the tap-to-expand
+   immersive sheet, and content goes full width.
+   ==================================================================== */
+
+/* Hidden unless the mobile layout is active. */
+.mobile-nav {
+  display: none;
+}
+.drawer-scrim {
+  display: none;
+}
+.im-seek {
+  display: none; /* only shown inside the immersive sheet on mobile */
+}
+
+@media (max-width: 720px) {
+  /* Single column: just the content. */
+  .body {
+    grid-template-columns: 1fr;
+  }
+  .now-playing {
+    display: none;
+  }
+
+  /* Sidebar -> slide-over drawer. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(85vw, 320px);
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 2px 0 28px rgba(0, 0, 0, 0.55);
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  }
+  .app.drawer-open .sidebar {
+    transform: none;
+  }
+  .drawer-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .app.drawer-open .drawer-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Bottom tab bar. */
+  .mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    backdrop-filter: var(--panel-blur);
+  }
+  .mnav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 0 7px;
+    background: none;
+    border: none;
+    color: var(--fg-dim);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .mnav-item.active {
+    color: var(--accent);
+  }
+
+  /* Titlebar: tighten for a narrow screen; drop the desktop-only drag region. */
+  .titlebar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .titlebar-drag {
+    display: none;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .content {
+    padding: 16px 14px;
+    overflow-x: hidden;
+  }
+  /* Let the title + actions wrap instead of clipping on a narrow screen. */
+  .view-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .view-header h1 {
+    font-size: 24px;
+  }
+
+  /* Transport -> compact mini-player (tap it to open the now-playing sheet). */
+  .transport {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 0 10px;
+    height: 64px;
+  }
+  .transport-now {
+    cursor: pointer;
+  }
+  .transport-extra,
+  .transport-right,
+  .seek-row {
+    display: none;
+  }
+
+  /* Give the immersive sheet its seek bar on mobile. */
+  .im-seek {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(92vw, 520px);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .im-seek .seek {
+    flex: 1;
+  }
+}
