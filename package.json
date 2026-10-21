@@ -1,7 +1,7 @@
 {
   "name": "lumen-android",
   "productName": "Lumen",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Android build of Lumen — a music player with reactive audio visualizers",
   "author": {
     "name": "evanlawrence",
