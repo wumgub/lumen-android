@@ -22,9 +22,17 @@ import {
   metaSet
 } from './db'
 import { parseFile } from './metadata'
+import { Capacitor } from '@capacitor/core'
+import { MediaStore } from './native-plugin'
+import type { NativeTrack } from './native-plugin'
 
-const APP_VERSION = '0.1.4'
+const APP_VERSION = '0.2.0'
 const REPO = 'wumgub/lumen-android'
+
+// On a real Android build the library comes from the device's MediaStore (songs
+// browsed in place). Everywhere else — desktop preview, a plain browser — we fall
+// back to the file-picker import below. The plugin is only present in the APK.
+const NATIVE = Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('MediaStore')
 
 const DEFAULT_SETTINGS: AppSettings = {
   discordEnabled: false,
@@ -57,6 +65,12 @@ interface AlbumCoverRow {
 }
 const albumCovers = new Map<string, AlbumCoverRow>()
 const albumUrls = new Map<string, string>() // album -> object URL (cache)
+
+// MediaStore is the source of truth on native, so edits (renames, notes, album
+// moves) can't be written back to the files. We keep them as per-track patches
+// in the meta store and re-apply them on top of every rescan. Keyed by the
+// MediaStore id, which is stable for a given file, so edits stick across scans.
+const overrides = new Map<number, Partial<Track>>()
 
 let folders: string[] = []
 let playlistOrder: number[] = []
@@ -99,6 +113,20 @@ function init(): Promise<void> {
     nextPlaylistId = Math.max(0, ...pls.map((p) => p.id)) + 1
     // Any playlists missing from the saved order get appended.
     for (const p of pls) if (!playlistOrder.includes(p.id)) playlistOrder.push(p.id)
+
+    const ovRows = await metaGet<Record<string, Partial<Track>>>('overrides', {})
+    for (const [k, v] of Object.entries(ovRows)) overrides.set(Number(k), v)
+
+    // If we already hold the audio permission, load the device library straight
+    // away so the app opens on the user's music instead of an empty shelf.
+    if (NATIVE) {
+      try {
+        if ((await MediaStore.checkPermission()).granted) await nativeScan()
+      } catch {
+        // Plugin unavailable or scan failed — leave the library empty; the
+        // "add folder" button can re-request and rescan.
+      }
+    }
   })()
   return ready
 }
@@ -152,14 +180,8 @@ function urlFor(map: Map<number, string>, blobs: Map<number, Blob>, id: number):
   return url
 }
 
-/** The art blob representing an album: an override if set, else its first
- * art-bearing track (by disc/track number). */
-function resolveAlbumBlob(album: string): Blob | null {
-  const ov = albumCovers.get(album)
-  if (ov) {
-    if (ov.source === 'custom' && ov.blob) return ov.blob
-    if (ov.source === 'track' && ov.trackId != null) return artBlobs.get(ov.trackId) ?? null
-  }
+/** An album's representative track: its first art-bearing track by disc/track. */
+function firstArtTrack(album: string): Track | null {
   let best: Track | null = null
   for (const t of tracks.values()) {
     if (t.album !== album || !t.hasArt) continue
@@ -173,7 +195,83 @@ function resolveAlbumBlob(album: string): Blob | null {
       best = t
     }
   }
+  return best
+}
+
+/** The art blob representing an album: an override if set, else its first
+ * art-bearing track (by disc/track number). Blob-backed (web import) path. */
+function resolveAlbumBlob(album: string): Blob | null {
+  const ov = albumCovers.get(album)
+  if (ov) {
+    if (ov.source === 'custom' && ov.blob) return ov.blob
+    if (ov.source === 'track' && ov.trackId != null) return artBlobs.get(ov.trackId) ?? null
+  }
+  const best = firstArtTrack(album)
   return best ? artBlobs.get(best.id) ?? null : null
+}
+
+/** Re-apply the saved per-track edits on top of the freshly scanned library. */
+function applyOverrides(): void {
+  for (const [id, patch] of overrides) {
+    const t = tracks.get(id)
+    if (t) tracks.set(id, { ...t, ...patch })
+  }
+}
+
+/** Record (and persist) a per-track edit, then apply it to the live mirror. */
+async function setOverride(id: number, patch: Partial<Track>): Promise<void> {
+  overrides.set(id, { ...(overrides.get(id) ?? {}), ...patch })
+  const t = tracks.get(id)
+  if (t) tracks.set(id, { ...t, ...patch })
+  const obj: Record<string, Partial<Track>> = {}
+  for (const [k, v] of overrides) obj[k] = v
+  await metaSet('overrides', obj)
+}
+
+/** Pull the whole device library from MediaStore and rebuild the in-memory
+ * mirror. Audio and art stay as `content://` URIs served by Capacitor — nothing
+ * is copied into IndexedDB. */
+async function nativeScan(): Promise<ScanResult> {
+  emitScan({ phase: 'discovering', processed: 0, total: 0 })
+  let rows: NativeTrack[] = []
+  try {
+    rows = (await MediaStore.scan()).tracks ?? []
+  } catch {
+    emitScan({ phase: 'done', processed: 0, total: 0 })
+    return { added: 0, updated: 0, total: tracks.size }
+  }
+
+  tracks.clear()
+  mediaUrls.clear() // native URLs are plain strings, not object URLs — no revoke
+  artUrls.clear()
+  invalidateAllAlbums()
+
+  for (const r of rows) {
+    const t: Track = {
+      id: r.id,
+      path: r.uri,
+      title: r.title || '(untitled)',
+      artist: r.artist || 'Unknown Artist',
+      albumArtist: r.albumArtist || r.artist || 'Unknown Artist',
+      album: r.album || 'Unknown Album',
+      genre: r.genre || '',
+      year: r.year || null,
+      trackNo: r.trackNo || null,
+      discNo: r.discNo || null,
+      duration: r.duration || 0,
+      hasArt: r.hasArt ? 1 : 0,
+      addedAt: r.addedAt || Date.now(),
+      note: '',
+      isVideo: r.isVideo ? 1 : 0
+    }
+    tracks.set(t.id, t)
+    mediaUrls.set(t.id, Capacitor.convertFileSrc(r.uri))
+    if (r.artUri) artUrls.set(t.id, Capacitor.convertFileSrc(r.artUri))
+  }
+
+  applyOverrides()
+  emitScan({ phase: 'done', processed: rows.length, total: rows.length })
+  return { added: rows.length, updated: 0, total: tracks.size }
 }
 
 /** Drop a cached album cover URL so the next render rebuilds it from current data. */
@@ -275,6 +373,15 @@ const api: LumenApi = {
 
   async pickFolder(): Promise<string[]> {
     await init()
+    // On device the "add folder" button means "let me at your music": ask for
+    // the permission; the ensuing addFolder()/scan() does the actual read.
+    if (NATIVE) {
+      try {
+        return (await MediaStore.requestPermission()).granted ? ['On-device music'] : []
+      } catch {
+        return []
+      }
+    }
     const files = (await openPicker()).filter((f) => isMedia(f.name))
     if (files.length === 0) return []
     pendingImport = files
@@ -284,11 +391,15 @@ const api: LumenApi = {
 
   async folders(): Promise<string[]> {
     await init()
+    // The device library isn't a folder list the user curates, so don't surface
+    // one (it would also wrongly become a path filter in query()).
+    if (NATIVE) return []
     return [...folders]
   },
 
   async addFolder(p: string): Promise<void> {
     await init()
+    if (NATIVE) return // nothing to track; the scan reads everything
     if (!folders.includes(p)) {
       folders.push(p)
       await metaSet('folders', folders)
@@ -297,6 +408,7 @@ const api: LumenApi = {
 
   async removeFolder(p: string): Promise<void> {
     await init()
+    if (NATIVE) return // the device library isn't ours to prune
     folders = folders.filter((f) => f !== p)
     await metaSet('folders', folders)
     // Drop tracks that came from that folder.
@@ -314,6 +426,7 @@ const api: LumenApi = {
 
   async scan(): Promise<ScanResult> {
     await init()
+    if (NATIVE) return nativeScan()
     const files = pendingImport
     pendingImport = []
     const label = pendingLabel || folderLabelFor(files)
@@ -435,6 +548,7 @@ const api: LumenApi = {
 
   async renameTrack(id: number, title: string): Promise<void> {
     await init()
+    if (NATIVE) return setOverride(id, { title })
     const t = tracks.get(id)
     if (t) await persistTrack({ ...t, title })
   },
@@ -443,11 +557,12 @@ const api: LumenApi = {
     await init()
     for (const t of [...tracks.values()]) {
       if (t.artist === oldName || t.albumArtist === oldName) {
-        await persistTrack({
-          ...t,
+        const patch = {
           artist: t.artist === oldName ? newName : t.artist,
           albumArtist: t.albumArtist === oldName ? newName : t.albumArtist
-        })
+        }
+        if (NATIVE) await setOverride(t.id, patch)
+        else await persistTrack({ ...t, ...patch })
       }
     }
   },
@@ -455,13 +570,19 @@ const api: LumenApi = {
   async renameAlbum(oldName: string, newName: string): Promise<void> {
     await init()
     for (const t of [...tracks.values()]) {
-      if (t.album === oldName) await persistTrack({ ...t, album: newName })
+      if (t.album !== oldName) continue
+      if (NATIVE) await setOverride(t.id, { album: newName })
+      else await persistTrack({ ...t, album: newName })
     }
   },
 
   async setTrackAlbum(trackIds: number[], album: string): Promise<void> {
     await init()
     for (const id of trackIds) {
+      if (NATIVE) {
+        await setOverride(id, { album })
+        continue
+      }
       const t = tracks.get(id)
       if (t) await persistTrack({ ...t, album })
     }
@@ -469,6 +590,7 @@ const api: LumenApi = {
 
   async setTrackNote(id: number, note: string): Promise<void> {
     await init()
+    if (NATIVE) return setOverride(id, { note })
     const t = tracks.get(id)
     if (t) await persistTrack({ ...t, note })
   },
@@ -572,6 +694,25 @@ const api: LumenApi = {
   albumArtUrl(album: string): string {
     const cached = albumUrls.get(album)
     if (cached) return cached
+
+    // A user-supplied custom image is a blob regardless of backend.
+    const ov = albumCovers.get(album)
+    if (ov?.source === 'custom' && ov.blob) {
+      const url = URL.createObjectURL(ov.blob)
+      albumUrls.set(album, url)
+      return url
+    }
+
+    if (NATIVE) {
+      // Art lives at a content:// URI (already converted into artUrls). Use the
+      // override track if one was picked, else the album's first art-bearing one.
+      const id =
+        ov?.source === 'track' && ov.trackId != null ? ov.trackId : firstArtTrack(album)?.id
+      const url = id != null ? artUrls.get(id) ?? '' : ''
+      if (url) albumUrls.set(album, url)
+      return url
+    }
+
     const blob = resolveAlbumBlob(album)
     if (!blob) return ''
     const url = URL.createObjectURL(blob)

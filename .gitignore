@@ -1,7 +1,10 @@
 node_modules/
 dist/
-# Capacitor copies the web build into here on `cap sync`; it's generated.
+# Capacitor regenerates these from capacitor.config.ts + installed plugins on
+# every `cap sync`, so they're build output, not source.
 android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
 android/.gradle/
 android/build/
 android/app/build/

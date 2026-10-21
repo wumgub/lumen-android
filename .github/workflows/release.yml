@@ -9,9 +9,9 @@ name: Build APK
 # Or run it by hand from the Actions tab (workflow_dispatch) to get the APK as a
 # build artifact without publishing a release.
 #
-# The Android project (android/) isn't committed — it has no custom native code
-# yet, so CI generates it fresh with `cap add android` each run. When we add a
-# MediaStore plugin we'll commit android/ and drop that step.
+# The Android project (android/) is committed now that it carries native code
+# (the MediaStore plugin), so CI no longer regenerates it — it just syncs the
+# fresh web bundle into it with `cap sync` before building.
 
 on:
   push:
@@ -53,10 +53,7 @@ jobs:
           # pulls is enough; only platform-tools needs ensuring.
           packages: platform-tools
 
-      # Generate the native Android project and copy the web bundle into it.
-      - name: Add Android platform
-        run: npx cap add android
-
+      # android/ is committed; just copy the fresh web bundle + plugin config in.
       - name: Sync web assets
         run: npx cap sync android
 
