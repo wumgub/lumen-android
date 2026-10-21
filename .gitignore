@@ -10,5 +10,9 @@ android/.idea/
 android/app/release/
 *.keystore
 *.jks
+# ...except the shared debug keystore CI signs with (non-secret; password is the
+# standard "android"). Committing it keeps every build's signature identical so
+# updates install over each other.
+!ci/debug.keystore
 .DS_Store
 *.log
