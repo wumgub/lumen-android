@@ -17,6 +17,29 @@ sideloadable `.apk`.
   <img src="docs/screenshots/library-menu.png" width="210" alt="Library drawer with playlists and folders" />
 </p>
 
+## Requirements & recommended specs
+
+The player itself is light. The audio **visualizer** is the demanding part — it
+runs a continuous Web Audio analyser plus a canvas animation — so that's what the
+specs below are really about.
+
+| | Minimum | Recommended |
+| --- | --- | --- |
+| Android | 12 (API 31) | 13 or newer |
+| RAM | 3 GB | 4 GB+ |
+| Chipset | any ~2019+ mid-range | recent mid-range or better |
+| Free storage | ≈ the size of the music you import, + ~200 MB | comfortable headroom |
+| WebView | stock, up to date | — |
+
+**Storage note:** importing **copies** each track into the app's own on-device
+storage (IndexedDB), rather than streaming it from where it sits. So budget free
+space roughly equal to the music you add. (A future MediaStore-backed library
+will read files in place and remove this cost.)
+
+**On a weaker or older phone:** turn the visualizer **off** (the toggle on the
+now-playing sheet) or cap it to **30 or 15 FPS** in Settings. Everything else —
+browsing, playback, playlists — stays light either way.
+
 ## Install
 
 1. Grab the latest `Lumen-*.apk` from the [Releases page](https://github.com/wumgub/lumen-android/releases/latest).
