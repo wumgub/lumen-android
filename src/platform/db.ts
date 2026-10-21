@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'lumen'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export const STORES = {
   tracks: 'tracks', // key: id (number)         -> Track row
@@ -13,6 +13,7 @@ export const STORES = {
   art: 'art', // key: trackId (number)         -> { trackId, blob }
   playlists: 'playlists', // key: id (number)  -> Playlist
   playlistTracks: 'playlistTracks', // key: auto -> { playlistId, trackId, pos }
+  albumCovers: 'albumCovers', // key: album (string) -> { album, source, trackId?, blob? }
   meta: 'meta' // key: string                  -> arbitrary value (settings, counters, order)
 } as const
 
@@ -44,6 +45,9 @@ function openDB(): Promise<IDBDatabase> {
           autoIncrement: true
         })
         s.createIndex('byPlaylist', 'playlistId', { unique: false })
+      }
+      if (!db.objectStoreNames.contains(STORES.albumCovers)) {
+        db.createObjectStore(STORES.albumCovers, { keyPath: 'album' })
       }
       if (!db.objectStoreNames.contains(STORES.meta)) {
         db.createObjectStore(STORES.meta, { keyPath: 'key' })

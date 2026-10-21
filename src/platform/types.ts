@@ -58,6 +58,12 @@ export interface LumenApi {
 
   mediaUrl(trackId: number): string
   artUrl(trackId: number): string
+
+  albumArtUrl(album: string): string
+  setAlbumCoverFromTrack(album: string, trackId: number): Promise<void>
+  setAlbumCoverCustom(album: string): Promise<boolean>
+  clearAlbumCover(album: string): Promise<void>
+  albumHasCover(album: string): Promise<boolean>
 }
 
 declare global {
