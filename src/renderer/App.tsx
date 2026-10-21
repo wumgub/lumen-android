@@ -16,13 +16,13 @@ import {
   Play,
   Next,
   Prev,
-  Search,
   MusicNote,
   Users,
   Disc,
   ListIcon
 } from './components/icons'
 import { formatTime } from './lib/format'
+import { SearchBox } from './components/SearchBox'
 import { VISUALIZER_LIST, isVisualizerId, type VisualizerId } from './visualizers'
 import type { View } from './types'
 
@@ -132,17 +132,13 @@ function Shell(): React.ReactElement {
           <span className="brand-dot" />
           Lumen
         </div>
-        <div className="search-box">
-          <Search size={16} />
-          <input
-            placeholder="Search songs, artists, albums…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              if (e.target.value && view.kind !== 'songs') setView({ kind: 'songs' })
-            }}
-          />
-        </div>
+        <SearchBox
+          value={search}
+          onChange={(v) => {
+            setSearch(v)
+            if (v && view.kind !== 'songs') setView({ kind: 'songs' })
+          }}
+        />
         <ThemeSelector />
         <button
           className="titlebar-btn"
