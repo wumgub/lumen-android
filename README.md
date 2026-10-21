@@ -17,6 +17,20 @@ everything. It isn't built for old phones; the desktop app is there for those.
   <img src="docs/screenshots/library-menu.png" width="210" alt="Library drawer with playlists and folders" />
 </p>
 
+## Visualizers
+
+There are three. Tap the mini-player to go full screen, then switch between them
+from the row at the bottom.
+
+<p>
+  <img src="docs/screenshots/viz-bars.png" width="210" alt="Spectrum Bars visualizer" />
+  <img src="docs/screenshots/viz-waveform.png" width="210" alt="Waveform visualizer" />
+  <img src="docs/screenshots/viz-radial.png" width="210" alt="Radial visualizer" />
+</p>
+
+Left to right: Spectrum Bars, Waveform, Radial. They take their colours from
+whatever theme you're using.
+
 ## Installing
 
 Grab the latest `Lumen-*.apk` from the [releases page](https://github.com/wumgub/lumen-android/releases/latest)
