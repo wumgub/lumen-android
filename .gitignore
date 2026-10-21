@@ -1,0 +1,14 @@
+node_modules/
+dist/
+# Capacitor copies the web build into here on `cap sync`; it's generated.
+android/app/src/main/assets/public/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/app/release/
+*.keystore
+*.jks
+.DS_Store
+*.log
