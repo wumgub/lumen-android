@@ -5,7 +5,7 @@ player with reactive audio visualizers. Same React UI as the desktop app, wrappe
 in a WebView with [Capacitor](https://capacitorjs.com/) so it builds to a real,
 sideloadable `.apk`.
 
-> **Targets Android 13+.** This is tuned for a modern WebView. It is *not* aimed
+> **Targets Android 12+.** This is tuned for a modern WebView. It is *not* aimed
 > at ancient devices — the desktop app is the one for everything else.
 
 ## Screenshots
