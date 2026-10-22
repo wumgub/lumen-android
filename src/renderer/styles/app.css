@@ -2751,3 +2751,7 @@ input[type='range']:hover::-webkit-slider-thumb {
     visibility: hidden;
   }
 }
+
+.stats-clear-row {
+  margin-top: 14px;
+}

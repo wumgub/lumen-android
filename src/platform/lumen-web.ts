@@ -14,6 +14,7 @@ import { MEDIA_EXTENSIONS } from '@shared/types'
 import type { LumenApi } from './types'
 import {
   STORES,
+  idbClear,
   idbDelete,
   idbGetAll,
   idbPlaylistRows,
@@ -36,6 +37,7 @@ const REPO = 'wumgub/lumen-android'
 const NATIVE = Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('MediaStore')
 
 const DEFAULT_SETTINGS: AppSettings = {
+  statsEnabled: true,
   discordEnabled: false,
   discordClientId: '',
   discordClientSecret: '',
@@ -754,6 +756,7 @@ const api: LumenApi = {
 
   async recordPlay(trackId: number, seconds: number, counted: boolean): Promise<void> {
     await init()
+    if (!settings.statsEnabled) return // privacy toggle: don't save anything
     await idbPut(STORES.plays, {
       trackId,
       playedAt: Date.now(),
@@ -773,6 +776,11 @@ const api: LumenApi = {
         counted: r.counted
       }))
       .sort((a, b) => a.playedAt - b.playedAt)
+  },
+
+  async clearPlayHistory(): Promise<void> {
+    await init()
+    await idbClear(STORES.plays)
   }
 }
 
