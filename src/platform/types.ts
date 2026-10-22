@@ -2,6 +2,7 @@ import type {
   AppInfo,
   AppSettings,
   LibraryQuery,
+  PlayEvent,
   Playlist,
   PlaylistWithCount,
   PresencePayload,
@@ -64,6 +65,9 @@ export interface LumenApi {
   setAlbumCoverCustom(album: string): Promise<boolean>
   clearAlbumCover(album: string): Promise<void>
   albumHasCover(album: string): Promise<boolean>
+
+  recordPlay(trackId: number, seconds: number, counted: boolean): Promise<void>
+  playHistory(): Promise<PlayEvent[]>
 }
 
 declare global {
