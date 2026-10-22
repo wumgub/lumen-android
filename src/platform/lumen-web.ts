@@ -2,6 +2,7 @@ import type {
   AppInfo,
   AppSettings,
   LibraryQuery,
+  PlayEvent,
   Playlist,
   PlaylistWithCount,
   ScanProgress,
@@ -26,7 +27,7 @@ import { Capacitor } from '@capacitor/core'
 import { MediaStore } from './native-plugin'
 import type { NativeTrack } from './native-plugin'
 
-const APP_VERSION = '0.2.0'
+const APP_VERSION = '0.3.0'
 const REPO = 'wumgub/lumen-android'
 
 // On a real Android build the library comes from the device's MediaStore (songs
@@ -749,6 +750,29 @@ const api: LumenApi = {
   async albumHasCover(album: string): Promise<boolean> {
     await init()
     return albumCovers.has(album)
+  },
+
+  async recordPlay(trackId: number, seconds: number, counted: boolean): Promise<void> {
+    await init()
+    await idbPut(STORES.plays, {
+      trackId,
+      playedAt: Date.now(),
+      seconds: Math.max(0, Math.round(seconds)),
+      counted: counted ? 1 : 0
+    })
+  },
+
+  async playHistory(): Promise<PlayEvent[]> {
+    await init()
+    const rows = await idbGetAll<PlayEvent>(STORES.plays)
+    return rows
+      .map((r) => ({
+        trackId: r.trackId,
+        playedAt: r.playedAt,
+        seconds: r.seconds,
+        counted: r.counted
+      }))
+      .sort((a, b) => a.playedAt - b.playedAt)
   }
 }
 
