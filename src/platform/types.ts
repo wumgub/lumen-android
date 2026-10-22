@@ -68,6 +68,7 @@ export interface LumenApi {
 
   recordPlay(trackId: number, seconds: number, counted: boolean): Promise<void>
   playHistory(): Promise<PlayEvent[]>
+  clearPlayHistory(): Promise<void>
 }
 
 declare global {
