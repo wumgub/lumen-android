@@ -6,7 +6,7 @@ desktop app, wrapped in a WebView with [Capacitor](https://capacitorjs.com/) and
 built into a normal sideloadable `.apk`.
 
 It's meant for Android 12 and up, where the system WebView is recent enough to run
-everything. It isn't built for old phones; the desktop app is there for those.
+everything. It isn't built for old phones; we now have [Lumen Ultralight](https://github.com/wumgub/lumen-ultralight) for that!
 
 ## Screenshots
 
