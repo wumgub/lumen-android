@@ -14,8 +14,8 @@ android {
         applicationId 'com.lumen.android'
         minSdk 26          // Android 8.0 and up
         targetSdk 34
-        versionCode 400    // major*10000 + minor*100 + patch (the WebView app was 1)
-        versionName '0.4.0'
+        versionCode 399    // major*10000 + minor*100 + patch, minus one for a beta (the WebView app was 1)
+        versionName '0.4.0-beta.1'
     }
 
     buildTypes {
