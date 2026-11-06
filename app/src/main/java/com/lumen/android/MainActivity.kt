@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
@@ -16,6 +17,8 @@ import com.lumen.android.model.Track
 import com.lumen.android.playback.PlaybackService
 import com.lumen.android.playback.PlayerActions
 import com.lumen.android.playback.PlayerState
+import com.lumen.android.playback.QueueEntry
+import com.lumen.android.playback.Volume
 import com.lumen.android.theme.ThemeController
 import com.lumen.android.ui.LumenApp
 import com.lumen.android.ui.ThemeHost
@@ -35,6 +38,11 @@ class MainActivity : ComponentActivity() {
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             pushCurrent(mediaItem)
+            pushQueue()
+        }
+
+        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+            pushQueue()
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -56,11 +64,20 @@ class MainActivity : ComponentActivity() {
         cycleRepeat = ::cycleRepeat,
         position = { controller?.currentPosition ?: 0L },
         duration = { controller?.duration ?: 0L },
+        playNext = { enqueue(it, next = true) },
+        addToQueue = { enqueue(it, next = false) },
+        jumpTo = ::jumpTo,
+        removeAt = { i -> controller?.let { if (i in 0 until it.mediaItemCount) it.removeMediaItem(i) } },
+        clearUpcoming = ::clearUpcoming,
+        setVolume = ::setVolume,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        themeController = ThemeController(getSharedPreferences("lumen", Context.MODE_PRIVATE))
+        val prefs = getSharedPreferences("lumen", Context.MODE_PRIVATE)
+        themeController = ThemeController(prefs)
+        Volume.level = prefs.getFloat(PlaybackService.KEY_VOLUME, 1f)
+        playerState.volume.value = Volume.level
 
         setContent {
             ThemeHost(themeController = themeController, playerState = playerState) {
@@ -81,6 +98,7 @@ class MainActivity : ComponentActivity() {
             playerState.shuffle.value = c.shuffleModeEnabled
             playerState.repeatMode.value = c.repeatMode
             pushCurrent(c.currentMediaItem)
+            pushQueue()
         }, MoreExecutors.directExecutor())
     }
 
@@ -96,6 +114,51 @@ class MainActivity : ComponentActivity() {
         playerState.title.value = item?.mediaMetadata?.title?.toString()
         playerState.artist.value = item?.mediaMetadata?.artist?.toString()
         playerState.artUri.value = item?.mediaMetadata?.artworkUri?.toString()
+    }
+
+    private fun pushQueue() {
+        val c = controller ?: return
+        playerState.queue.value = (0 until c.mediaItemCount).map { i ->
+            val item = c.getMediaItemAt(i)
+            QueueEntry(
+                trackId = item.mediaId.toLongOrNull(),
+                title = item.mediaMetadata.title?.toString() ?: "",
+                artist = item.mediaMetadata.artist?.toString() ?: "",
+                artUri = item.mediaMetadata.artworkUri?.toString(),
+            )
+        }
+        playerState.index.value = c.currentMediaItemIndex
+    }
+
+    private fun enqueue(tracks: List<Track>, next: Boolean) {
+        val c = controller ?: return
+        if (tracks.isEmpty()) return
+        if (c.mediaItemCount == 0) {
+            play(tracks, 0)
+            return
+        }
+        val items = tracks.map { it.toMediaItem() }
+        if (next) c.addMediaItems(c.currentMediaItemIndex + 1, items) else c.addMediaItems(items)
+    }
+
+    private fun jumpTo(index: Int) {
+        val c = controller ?: return
+        if (index !in 0 until c.mediaItemCount) return
+        c.seekToDefaultPosition(index)
+        c.play()
+    }
+
+    private fun clearUpcoming() {
+        val c = controller ?: return
+        val from = c.currentMediaItemIndex + 1
+        if (from in 1 until c.mediaItemCount) c.removeMediaItems(from, c.mediaItemCount)
+    }
+
+    private fun setVolume(v: Float) {
+        Volume.level = v
+        playerState.volume.value = Volume.level
+        getSharedPreferences("lumen", Context.MODE_PRIVATE).edit()
+            .putFloat(PlaybackService.KEY_VOLUME, Volume.level).apply()
     }
 
     private fun play(tracks: List<Track>, index: Int) {

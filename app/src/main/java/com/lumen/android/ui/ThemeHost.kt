@@ -21,7 +21,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.palette.graphics.Palette
 import com.lumen.android.playback.PlayerState
+import com.lumen.android.theme.PRESET_TOKENS
 import com.lumen.android.theme.ThemeController
+import com.lumen.android.viz.VizColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -65,6 +67,21 @@ fun ThemeHost(
         }
     }
 
+    val vizColors = remember(id, colors, customTokens) {
+        val tokens = if (id == "custom") customTokens else PRESET_TOKENS[id]
+        fun token(key: String, fallback: Color) = tokens?.get(key)?.let { parseHexColor(it) } ?: fallback
+        if (id == "blackout") {
+            // Blackout has one accent (fixed or from the cover); the bars follow it.
+            VizColors(accent = colors.accent, accent2 = colors.accent, fg = colors.fg)
+        } else {
+            VizColors(
+                accent = token("viz-accent", colors.accent),
+                accent2 = token("viz-accent-2", colors.accent2),
+                fg = token("viz-fg", colors.fg),
+            )
+        }
+    }
+
     if (!view.isInEditMode) {
         SideEffect {
             (context as? Activity)?.window?.let { window ->
@@ -75,7 +92,7 @@ fun ThemeHost(
         }
     }
 
-    CompositionLocalProvider(LocalLumenColors provides colors) {
+    CompositionLocalProvider(LocalLumenColors provides colors, LocalVizColors provides vizColors) {
         MaterialTheme(colorScheme = materialSchemeFor(colors)) {
             Surface(color = colors.bg, modifier = Modifier.fillMaxSize()) {
                 content()
