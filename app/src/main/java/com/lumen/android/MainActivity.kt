@@ -1,4 +1,4 @@
-package com.lumen.ultralight
+package com.lumen.android
 
 import android.content.ComponentName
 import android.content.Context
@@ -12,13 +12,13 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
-import com.lumen.ultralight.model.Track
-import com.lumen.ultralight.playback.PlaybackService
-import com.lumen.ultralight.playback.PlayerActions
-import com.lumen.ultralight.playback.PlayerState
-import com.lumen.ultralight.theme.ThemeController
-import com.lumen.ultralight.ui.LumenApp
-import com.lumen.ultralight.ui.ThemeHost
+import com.lumen.android.model.Track
+import com.lumen.android.playback.PlaybackService
+import com.lumen.android.playback.PlayerActions
+import com.lumen.android.playback.PlayerState
+import com.lumen.android.theme.ThemeController
+import com.lumen.android.ui.LumenApp
+import com.lumen.android.ui.ThemeHost
 
 class MainActivity : ComponentActivity() {
 

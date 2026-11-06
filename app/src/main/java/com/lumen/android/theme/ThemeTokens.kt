@@ -1,4 +1,4 @@
-package com.lumen.ultralight.theme
+package com.lumen.android.theme
 
 import org.json.JSONObject
 

@@ -1,4 +1,4 @@
-package com.lumen.ultralight.theme
+package com.lumen.android.theme
 
 import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow

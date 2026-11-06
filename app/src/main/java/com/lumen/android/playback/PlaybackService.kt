@@ -1,4 +1,4 @@
-package com.lumen.ultralight.playback
+package com.lumen.android.playback
 
 import android.content.Intent
 import androidx.media3.common.AudioAttributes

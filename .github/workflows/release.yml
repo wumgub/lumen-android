@@ -1,7 +1,16 @@
 name: Build APK
 
+# Every push to main builds the APK and runs the unit tests, with the APK kept as
+# a build artifact. Pushing a version tag also attaches it to that release:
+#
+#     git tag v0.4.0
+#     git push --follow-tags
+#
+# You can run it by hand from the Actions tab too (workflow_dispatch).
+
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 
@@ -27,29 +36,29 @@ jobs:
         with:
           packages: platform-tools
 
-      # Sign every build with the same committed non-secret debug key so friends
-      # can install updates over the top (matching signatures). Password is the
-      # well-known "android".
+      # Sign every build with the same committed non-secret debug key, the one the
+      # WebView app used too, so updates install over the top (Android only
+      # allows that when signatures match). Password is the well-known "android".
       - name: Install shared debug signing key
         run: |
           mkdir -p ~/.android
           cp ci/debug.keystore ~/.android/debug.keystore
 
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Build debug APK and run unit tests
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Name the APK after the ref
-        run: cp app/build/outputs/apk/debug/app-debug.apk "Lumen-Ultralight-${GITHUB_REF_NAME}.apk"
+        run: cp app/build/outputs/apk/debug/app-debug.apk "Lumen-${GITHUB_REF_NAME}.apk"
 
-      - name: Upload artifact (manual runs)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Upload artifact (untagged runs)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: actions/upload-artifact@v4
         with:
-          name: lumen-ultralight-apk
-          path: Lumen-Ultralight-*.apk
+          name: lumen-apk
+          path: Lumen-*.apk
 
       - name: Attach to release (tag pushes)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Lumen-Ultralight-*.apk
+          files: Lumen-*.apk

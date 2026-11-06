@@ -1,4 +1,4 @@
-package com.lumen.ultralight.model
+package com.lumen.android.model
 
 import android.net.Uri
 

@@ -1,4 +1,4 @@
-package com.lumen.ultralight.playback
+package com.lumen.android.playback
 
 import androidx.media3.common.Player
 import kotlinx.coroutines.flow.MutableStateFlow

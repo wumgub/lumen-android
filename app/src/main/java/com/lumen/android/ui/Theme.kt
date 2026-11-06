@@ -1,4 +1,4 @@
-package com.lumen.ultralight.ui
+package com.lumen.android.ui
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
