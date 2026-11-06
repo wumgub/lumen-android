@@ -15,4 +15,13 @@ class PlayerState {
     val artUri = MutableStateFlow<String?>(null)
     val shuffle = MutableStateFlow(false)
     val repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+
+    /** The play queue, in playback order, and where we are in it. */
+    val queue = MutableStateFlow<List<QueueEntry>>(emptyList())
+    val index = MutableStateFlow(-1)
+
+    /** 0 to [Volume.MAX]. */
+    val volume = MutableStateFlow(1f)
 }
+
+data class QueueEntry(val trackId: Long?, val title: String, val artist: String, val artUri: String?)

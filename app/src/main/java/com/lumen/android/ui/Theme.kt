@@ -7,10 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.lumen.android.viz.VizColors
 import kotlin.math.roundToInt
 
-/** Resolved colour roles for the whole UI. Mirrors the web app's token model
- *  (minus the visualizer tokens, which this build has no use for). */
+/** Resolved colour roles for the whole UI. Mirrors the web app's token model;
+ *  the visualizer's own colours are in [LocalVizColors]. */
 data class LumenColors(
     val bg: Color,
     val bg2: Color,
@@ -127,6 +128,11 @@ fun colorsFromTokens(t: Map<String, String>): LumenColors {
 }
 
 val LocalLumenColors = staticCompositionLocalOf { colorsFor("neon") }
+
+/** The visualizer's colours, from the theme's viz-* tokens. */
+val LocalVizColors = staticCompositionLocalOf {
+    VizColors(accent = hex("#22d3ee"), accent2 = hex("#e879f9"), fg = Color.White)
+}
 
 // Read the active theme's roles. These are @Composable getters, so every usage
 // in the UI stays exactly as it was — they just resolve from the current theme.

@@ -82,4 +82,8 @@ dependencies {
     ksp 'androidx.room:room-compiler:2.6.1'
 
     debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    testImplementation 'junit:junit:4.13.2'
+    // The real org.json, since android.jar only has stubs on the JVM.
+    testImplementation 'org.json:json:20231013'
 }

@@ -30,6 +30,8 @@ class MediaStoreScanner(private val context: Context) {
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.YEAR,
+            MediaStore.Audio.Media.DATE_ADDED,
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sortOrder = "${MediaStore.Audio.Media.ARTIST} COLLATE NOCASE ASC, " +
@@ -47,12 +49,15 @@ class MediaStoreScanner(private val context: Context) {
             val albumIdCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
             val durationCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val trackCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+            val yearCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
+            val addedCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
 
             while (c.moveToNext()) {
                 val id = c.getLong(idCol)
                 val albumId = c.getLong(albumIdCol)
                 val rawTrack = if (c.isNull(trackCol)) 0 else c.getInt(trackCol)
                 val trackNo = rawTrack % 1000 // MediaStore packs disc*1000 + track
+                val discNo = rawTrack / 1000
 
                 var artist = c.getString(artistCol) ?: ""
                 if (artist == MediaStore.UNKNOWN_STRING) artist = ""
@@ -68,6 +73,9 @@ class MediaStoreScanner(private val context: Context) {
                         trackNo = trackNo,
                         uri = ContentUris.withAppendedId(collection, id),
                         artUri = if (albumId > 0) ContentUris.withAppendedId(albumArtBase, albumId) else null,
+                        discNo = discNo,
+                        year = if (c.isNull(yearCol)) 0 else c.getInt(yearCol),
+                        dateAdded = if (c.isNull(addedCol)) 0L else c.getLong(addedCol),
                     )
                 )
             }
