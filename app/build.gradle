@@ -5,21 +5,23 @@ plugins {
 }
 
 android {
-    namespace 'com.lumen.ultralight'
+    namespace 'com.lumen.android'
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.lumen.ultralight'
-        minSdk 25          // Android 7.1.1 and up
+        // Same id and signing key as the old WebView app, so this installs over
+        // it as an update and keeps its data for the first-launch import.
+        applicationId 'com.lumen.android'
+        minSdk 26          // Android 8.0 and up
         targetSdk 34
-        versionCode 8
+        versionCode 400    // major*10000 + minor*100 + patch (the WebView app was 1)
         versionName '0.4.0'
     }
 
     buildTypes {
         release {
-            // R8 / resource shrinking comes in a later phase once the app is
-            // stable; Phase 0 ships an unminified debug-signed APK to prove CI.
+            // R8 / resource shrinking comes later; CI ships an unminified
+            // debug-signed APK for now.
             minifyEnabled false
         }
     }

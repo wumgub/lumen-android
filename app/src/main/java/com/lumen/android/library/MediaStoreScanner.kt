@@ -1,11 +1,11 @@
-package com.lumen.ultralight.library
+package com.lumen.android.library
 
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import com.lumen.ultralight.model.Track
+import com.lumen.android.model.Track
 
 /**
  * Reads the device's music library straight from MediaStore, the same source a

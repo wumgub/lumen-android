@@ -1,4 +1,4 @@
-package com.lumen.ultralight.ui
+package com.lumen.android.ui
 
 import android.app.Activity
 import android.content.Context
@@ -20,8 +20,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.palette.graphics.Palette
-import com.lumen.ultralight.playback.PlayerState
-import com.lumen.ultralight.theme.ThemeController
+import com.lumen.android.playback.PlayerState
+import com.lumen.android.theme.ThemeController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

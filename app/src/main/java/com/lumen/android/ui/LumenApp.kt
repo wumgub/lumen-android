@@ -1,4 +1,4 @@
-package com.lumen.ultralight.ui
+package com.lumen.android.ui
 
 import android.Manifest
 import android.content.Context
@@ -83,18 +83,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.lumen.ultralight.R
-import com.lumen.ultralight.library.LibraryViewModel
-import com.lumen.ultralight.model.Track
-import com.lumen.ultralight.playback.PlayerActions
-import com.lumen.ultralight.data.PlaylistViewModel
-import com.lumen.ultralight.data.PlaylistWithCount
-import com.lumen.ultralight.playback.PlayerState
-import com.lumen.ultralight.theme.EDITABLE_TOKENS
-import com.lumen.ultralight.theme.START_FROM
-import com.lumen.ultralight.theme.ThemeController
-import com.lumen.ultralight.theme.exportTokens
-import com.lumen.ultralight.theme.parseTokens
+import com.lumen.android.R
+import com.lumen.android.library.LibraryViewModel
+import com.lumen.android.model.Track
+import com.lumen.android.playback.PlayerActions
+import com.lumen.android.data.PlaylistViewModel
+import com.lumen.android.data.PlaylistWithCount
+import com.lumen.android.playback.PlayerState
+import com.lumen.android.theme.EDITABLE_TOKENS
+import com.lumen.android.theme.START_FROM
+import com.lumen.android.theme.ThemeController
+import com.lumen.android.theme.exportTokens
+import com.lumen.android.theme.parseTokens
 import kotlinx.coroutines.delay
 
 private sealed interface Detail {
@@ -625,7 +625,7 @@ private fun PermissionScreen(onRequest: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Lumen Ultralight", color = LumenAccent, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        Text("Lumen", color = LumenAccent, fontSize = 26.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         Text(
             "To play your music, Lumen needs permission to read the audio on your phone.",

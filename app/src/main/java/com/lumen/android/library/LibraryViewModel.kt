@@ -1,9 +1,9 @@
-package com.lumen.ultralight.library
+package com.lumen.android.library
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.lumen.ultralight.model.Track
+import com.lumen.android.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

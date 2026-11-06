@@ -1,4 +1,4 @@
-package com.lumen.ultralight.data
+package com.lumen.android.data
 
 import android.content.Context
 import androidx.room.Database

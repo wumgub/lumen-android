@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-colour version for Android 13's themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1344"
+    android:viewportHeight="1344">
+    <group android:translateX="160" android:translateY="160">
+        <path android:fillColor="#ff000000" android:pathData="M208,466.0 a44.0,44.0 0 0 1 88,0 v92.0 a44.0,44.0 0 0 1 -88,0 z" />
+        <path android:fillColor="#ff000000" android:pathData="M338,346.0 a44.0,44.0 0 0 1 88,0 v332.0 a44.0,44.0 0 0 1 -88,0 z" />
+        <path android:fillColor="#ff000000" android:pathData="M468,406.0 a44.0,44.0 0 0 1 88,0 v212.0 a44.0,44.0 0 0 1 -88,0 z" />
+        <path android:fillColor="#ff000000" android:pathData="M598,321.0 a44.0,44.0 0 0 1 88,0 v382.0 a44.0,44.0 0 0 1 -88,0 z" />
+        <path android:fillColor="#ff000000" android:pathData="M728,441.0 a44.0,44.0 0 0 1 88,0 v142.0 a44.0,44.0 0 0 1 -88,0 z" />
+    </group>
+</vector>

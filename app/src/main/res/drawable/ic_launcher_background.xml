@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The desktop icon's dark tile: a diagonal indigo-to-black gradient with a
+     faint sheen across the top. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1344"
+    android:viewportHeight="1344">
+    <path android:pathData="M0,0 h1344 v1344 h-1344 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="160" android:startY="160" android:endX="1184" android:endY="1184">
+                <item android:offset="0" android:color="#ff1b1140" />
+                <item android:offset="0.55" android:color="#ff0d0b1f" />
+                <item android:offset="1" android:color="#ff07070e" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0 h1344 v1344 h-1344 z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="160" android:endX="0" android:endY="518">
+                <item android:offset="0" android:color="#1affffff" />
+                <item android:offset="1" android:color="#00ffffff" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

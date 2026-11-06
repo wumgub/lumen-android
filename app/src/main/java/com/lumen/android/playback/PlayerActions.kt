@@ -1,6 +1,6 @@
-package com.lumen.ultralight.playback
+package com.lumen.android.playback
 
-import com.lumen.ultralight.model.Track
+import com.lumen.android.model.Track
 
 /** Callbacks the UI uses to drive playback, supplied by MainActivity. */
 class PlayerActions(

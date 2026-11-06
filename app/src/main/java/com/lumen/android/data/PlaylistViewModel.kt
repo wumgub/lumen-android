@@ -1,4 +1,4 @@
-package com.lumen.ultralight.data
+package com.lumen.android.data
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
