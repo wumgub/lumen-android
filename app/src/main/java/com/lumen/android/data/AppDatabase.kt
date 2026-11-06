@@ -32,10 +32,9 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "lumen.db",
             )
-                // Nobody has this database yet (the WebView app kept its data in
-                // IndexedDB), so schema changes can still start fresh. Once the
-                // native app is released this has to become real migrations.
-                .fallbackToDestructiveMigration()
+                // People's playlists, stats and edits live here now (some of
+                // them imported from the WebView app), so a schema change must
+                // come with a Migration. Never fall back to wiping it.
                 .build().also { instance = it }
         }
     }
