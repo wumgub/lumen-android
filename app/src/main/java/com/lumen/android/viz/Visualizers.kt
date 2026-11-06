@@ -17,7 +17,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
-/** The three visualizers, ported from the desktop's visualizers/*.ts with the same maths. */
+/** The three visualizers, ported from the desktop app with the same maths. */
 enum class VizKind(val id: String, val label: String) {
     Bars("bars", "Spectrum Bars"),
     Waveform("waveform", "Waveform"),
