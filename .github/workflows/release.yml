@@ -62,3 +62,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: Lumen-*.apk
+          prerelease: ${{ contains(github.ref_name, '-') }}
