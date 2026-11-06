@@ -13,6 +13,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
+import com.lumen.android.migration.WebViewImport
 import com.lumen.android.model.Track
 import com.lumen.android.playback.PlaybackService
 import com.lumen.android.playback.PlayerActions
@@ -78,6 +79,8 @@ class MainActivity : ComponentActivity() {
         themeController = ThemeController(prefs)
         Volume.level = prefs.getFloat(PlaybackService.KEY_VOLUME, 1f)
         playerState.volume.value = Volume.level
+        // First launch after updating from the WebView app: bring its data over.
+        WebViewImport.runIfNeeded(this, themeController)
 
         setContent {
             ThemeHost(themeController = themeController, playerState = playerState) {
