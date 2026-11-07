@@ -6,21 +6,24 @@ with Jetpack Compose, and it plays your music through Media3, so it keeps going 
 the background with the usual lockscreen and notification controls.
 
 Up to v0.3.2 this was the desktop app's React interface running in a WebView. That
-worked, but it never felt as quick as a real Android player, so it's being rebuilt
-natively. The new code started life as a separate "Ultralight" app and now lives
-here.
+worked, but it never felt as quick as a real Android player, so from v0.4.0 it's
+native. It installs over the old WebView app as a normal update, and your playlists,
+stats and edits come across on first launch.
 
-> **Status: in progress.** The latest release is still the WebView version until
-> the native one catches up with it: listening stats, song edits, the queue, and
-> the visualizers. When it does, it installs over the old app as a normal update,
-> and your playlists, stats and edits come across on first launch.
-
-## What's in it so far
+## What's in it
 
 - Your phone's music library, read straight from the system (no importing or
   copying files)
-- Songs, artists, albums and playlists, with search
-- Shuffle, repeat, and background playback with lockscreen controls
+- Songs, artists, albums and playlists, with search (it also searches your notes,
+  and ignores accents, so "елка" finds "Ёлка" and "beyonce" finds "Beyoncé")
+- A queue: play next, add to queue, jump around in it or drop songs, plus shuffle and
+  repeat
+- Background playback with lockscreen and notification controls, and volume up to 150%
+- Edit song: fix a song's title, artist or album, or give it a note, just for that song.
+  Renaming an artist or album from its own page changes every song on it
+- Album covers: pick an image, borrow another song's art, or reset it
+- Listening stats: top songs and artists, and how much you've listened each week
+- The visualizers (bars, waveform, radial), small on the player or full screen
 - All the Lumen themes (Neon, Flashbang, Minimal Dark, Retro, Glass and Blackout)
   plus the custom theme editor, using the same theme files as the desktop app
 
