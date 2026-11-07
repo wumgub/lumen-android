@@ -138,9 +138,7 @@ private class SongMenu(
     val playNext: (Track) -> Unit,
     val addToQueue: (Track) -> Unit,
     val addToPlaylist: (Track) -> Unit,
-    val rename: (Track) -> Unit,
-    val note: (Track) -> Unit,
-    val addToAlbum: (Track) -> Unit,
+    val edit: (Track) -> Unit,
     val removeFromAlbum: (Track) -> Unit,
     val goToArtist: (Track) -> Unit,
     val goToAlbum: (Track) -> Unit,
@@ -211,9 +209,7 @@ fun LumenApp(playerState: PlayerState, actions: PlayerActions, themeController: 
 
     // Dialogs.
     var addTrack by remember { mutableStateOf<Track?>(null) }
-    var renamingTrack by remember { mutableStateOf<Track?>(null) }
-    var noting by remember { mutableStateOf<Track?>(null) }
-    var albumFor by remember { mutableStateOf<List<Long>?>(null) }
+    var editing by remember { mutableStateOf<Track?>(null) }
     var renamingArtist by remember { mutableStateOf<String?>(null) }
     var renamingAlbum by remember { mutableStateOf<String?>(null) }
     var coverFor by remember { mutableStateOf<String?>(null) }
@@ -229,9 +225,7 @@ fun LumenApp(playerState: PlayerState, actions: PlayerActions, themeController: 
         playNext = { actions.playNext(listOf(it)) },
         addToQueue = { actions.addToQueue(listOf(it)) },
         addToPlaylist = { addTrack = it },
-        rename = { renamingTrack = it },
-        note = { noting = it },
-        addToAlbum = { albumFor = listOf(it.id) },
+        edit = { editing = it },
         removeFromAlbum = { vm.setAlbum(listOf(it.id), "") },
         goToArtist = {
             detail = Detail.Artist(it.artist.ifBlank { UNKNOWN_ARTIST })
@@ -308,8 +302,8 @@ fun LumenApp(playerState: PlayerState, actions: PlayerActions, themeController: 
                                 ids.mapNotNull { byId[it] }
                             }
                             val playlistMenu = SongMenu(
-                                menu.playNext, menu.addToQueue, menu.addToPlaylist, menu.rename, menu.note,
-                                menu.addToAlbum, menu.removeFromAlbum, menu.goToArtist, menu.goToAlbum,
+                                menu.playNext, menu.addToQueue, menu.addToPlaylist, menu.edit,
+                                menu.removeFromAlbum, menu.goToArtist, menu.goToAlbum,
                                 removeFromPlaylist = { t -> playlistVm.removeFromPlaylist(d.id, t.id) },
                             )
                             DetailScreen(d.name, "${list.size} songs", null, list, currentId, actions, playlistMenu) {
@@ -356,23 +350,11 @@ fun LumenApp(playerState: PlayerState, actions: PlayerActions, themeController: 
         addTrack?.let { t ->
             AddToPlaylistDialog(playlistVm, t) { addTrack = null }
         }
-        renamingTrack?.let { t ->
-            NameDialog("Rename song", t.title, onDismiss = { renamingTrack = null }) { name ->
-                vm.renameTrack(t, name)
-                renamingTrack = null
-            }
-        }
-        noting?.let { t ->
-            NoteDialog(t, onDismiss = { noting = null }) { note ->
-                vm.setNote(t, note)
-                noting = null
-            }
-        }
-        albumFor?.let { ids ->
+        editing?.let { t ->
             val names = remember(tracks) { tracks.map { it.album }.filter { it.isNotBlank() }.distinct().sortedBy { it.lowercase() } }
-            AlbumPickerDialog(names, onDismiss = { albumFor = null }) { name ->
-                vm.setAlbum(ids, name)
-                albumFor = null
+            EditSongDialog(t, names, onDismiss = { editing = null }) { e ->
+                vm.editSong(t, e)
+                editing = null
             }
         }
         renamingArtist?.let { name ->
@@ -573,9 +555,7 @@ private fun SongRow(track: Track, active: Boolean, menu: SongMenu, onClick: () -
                 item("Add to playlist", menu.addToPlaylist)
                 menu.removeFromPlaylist?.let { item("Remove from playlist", it) }
                 Divider(color = LumenBg3)
-                item("Rename song…", menu.rename)
-                item(if (track.note.isEmpty()) "Add note…" else "Edit note…", menu.note)
-                item("Add to album…", menu.addToAlbum)
+                item("Edit song…", menu.edit)
                 if (track.album.isNotBlank()) item("Remove from album", menu.removeFromAlbum)
                 Divider(color = LumenBg3)
                 item("Go to artist", menu.goToArtist)

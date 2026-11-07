@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,98 +35,76 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.lumen.android.R
+import com.lumen.android.library.SongEdit
 import com.lumen.android.library.fold
 import com.lumen.android.model.Track
 
-/** Edit a song's note. Notes are searchable, so a romanised alias here finds a Cyrillic title. */
+/**
+ * Everything about one song in one place: title, artist, album and note. Edits
+ * only this song, so giving one untagged file an artist leaves the other
+ * "Unknown artist" songs alone. Typing an album suggests existing ones.
+ */
 @Composable
-fun NoteDialog(track: Track, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var text by remember { mutableStateOf(track.note) }
+fun EditSongDialog(track: Track, albums: List<String>, onDismiss: () -> Unit, onSave: (SongEdit) -> Unit) {
+    var title by remember { mutableStateOf(track.title) }
+    var artist by remember { mutableStateOf(track.artist) }
+    var album by remember { mutableStateOf(track.album) }
+    var note by remember { mutableStateOf(track.note) }
+    val q = fold(album.trim())
+    val suggestions = remember(albums, q) {
+        if (q.isEmpty() || albums.any { it == album.trim() }) emptyList()
+        else albums.filter { fold(it).contains(q) }.take(4)
+    }
     Dialog(onDismissRequest = onDismiss) {
         Surface(color = LumenBg2, shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.width(300.dp).padding(20.dp)) {
-                Text("Note", color = LumenFg, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                Text(track.title, color = LumenDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column(Modifier.width(320.dp).verticalScroll(rememberScrollState()).padding(20.dp)) {
+                Text("Edit song", color = LumenFg, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(12.dp))
+                Field("Title", title) { title = it }
+                Field("Artist", artist, placeholder = UNKNOWN_ARTIST) { artist = it }
+                Field("Album", album, placeholder = "No album") { album = it }
+                suggestions.forEach { name ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { album = name }.padding(horizontal = 4.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(painterResource(R.drawable.ic_albums), contentDescription = null, tint = LumenDim, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(10.dp))
+                        Text(name, color = LumenFg, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
                 OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.fillMaxWidth(),
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Note") },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     minLines = 2,
                     maxLines = 5,
                     placeholder = { Text("Anything you like. Search finds it.", color = LumenDim) },
                     colors = editorFieldColors(),
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    if (track.note.isNotEmpty()) {
-                        TextButton(onClick = { onSave("") }) { Text("Remove", color = LumenDim) }
-                    }
                     Spacer(Modifier.weight(1f))
                     TextButton(onClick = onDismiss) { Text("Cancel", color = LumenDim) }
-                    Button(onClick = { onSave(text) }) { Text("Save") }
+                    Button(onClick = { onSave(SongEdit(title, artist, album, note)) }) { Text("Save") }
                 }
             }
         }
     }
 }
 
-/** Pick an existing album, or type a new name to create one. */
 @Composable
-fun AlbumPickerDialog(albums: List<String>, onDismiss: () -> Unit, onPick: (String) -> Unit) {
-    var text by remember { mutableStateOf("") }
-    val q = fold(text.trim())
-    val matches = remember(albums, q) { albums.filter { q.isEmpty() || fold(it).contains(q) }.take(50) }
-    val exact = albums.any { it == text.trim() }
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(color = LumenBg2, shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.width(320.dp).padding(vertical = 16.dp)) {
-                Text(
-                    "Add to album",
-                    color = LumenFg,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    singleLine = true,
-                    placeholder = { Text("Album name", color = LumenDim) },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    colors = editorFieldColors(),
-                )
-                Spacer(Modifier.height(6.dp))
-                LazyColumn(Modifier.heightIn(max = 300.dp)) {
-                    if (text.isNotBlank() && !exact) {
-                        item {
-                            Row(
-                                Modifier.fillMaxWidth().clickable { onPick(text.trim()) }
-                                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = LumenAccent, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(12.dp))
-                                Text("Create album \"${text.trim()}\"", color = LumenAccent, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                    }
-                    items(matches) { name ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { onPick(name) }
-                                .padding(horizontal = 20.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(painterResource(R.drawable.ic_albums), contentDescription = null, tint = LumenDim, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text(name, color = LumenFg, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-            }
-        }
-    }
+private fun Field(label: String, value: String, placeholder: String? = null, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(label) },
+        singleLine = true,
+        placeholder = { if (placeholder != null) Text(placeholder, color = LumenDim) },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        colors = editorFieldColors(),
+    )
 }
 
 /** The three ways to set an album's cover, as on desktop. */
