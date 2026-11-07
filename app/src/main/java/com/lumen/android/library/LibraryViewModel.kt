@@ -76,14 +76,26 @@ class LibraryViewModel(private val app: Application) : AndroidViewModel(app) {
         edits.upsertOverrides(ids.map { id -> change(existing[id] ?: OverrideEntity(trackId = id)) })
     }
 
-    fun renameTrack(track: Track, title: String) = viewModelScope.launch {
-        val t = title.trim()
-        if (t.isNotEmpty() && t != track.title) edit(listOf(track.id)) { it.copy(title = t) }
-    }
-
-    /** Attach a note to a track; blank clears it. */
-    fun setNote(track: Track, note: String) = viewModelScope.launch {
-        edit(listOf(track.id)) { it.copy(note = note.trim()) }
+    /**
+     * Save the Edit song dialog. Only fields that changed are written, and only
+     * for this one song: renaming its artist here doesn't touch other songs by
+     * the same artist (that's what renaming the artist itself is for). A blank
+     * title keeps the old one; a blank artist or album clears it.
+     */
+    fun editSong(track: Track, e: SongEdit) = viewModelScope.launch {
+        val title = e.title.trim().ifEmpty { track.title }
+        val artist = e.artist.trim()
+        val album = e.album.trim()
+        val note = e.note.trim()
+        if (title == track.title && artist == track.artist && album == track.album && note == track.note) return@launch
+        edit(listOf(track.id)) {
+            it.copy(
+                title = if (title != track.title) title else it.title,
+                artist = if (artist != track.artist) artist else it.artist,
+                album = if (album != track.album) album else it.album,
+                note = note,
+            )
+        }
     }
 
     /** Rename an artist on every song by them. Renaming onto an existing name merges. */
@@ -139,6 +151,9 @@ class LibraryViewModel(private val app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) { File(path).delete() }
     }
 }
+
+/** What the Edit song dialog hands back. */
+data class SongEdit(val title: String, val artist: String, val album: String, val note: String)
 
 /** Where an album's cover comes from: its override, else its first song's art. */
 fun albumArt(albumTracks: List<Track>, cover: AlbumCoverEntity?, all: List<Track>): Uri? {
