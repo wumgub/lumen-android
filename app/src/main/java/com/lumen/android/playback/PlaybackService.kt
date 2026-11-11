@@ -18,13 +18,14 @@ import kotlinx.coroutines.SupervisorJob
  * Hosts the ExoPlayer in a MediaSessionService so playback keeps running in the
  * background with lockscreen / notification controls. The audio path carries
  * Lumen's volume stage (up to 150%) and the visualizer tap, and the service
- * records listening stats.
+ * records listening stats and evens out loudness (Balance volume).
  */
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
     private var tracker: ListenTracker? = null
+    private var balance: BalanceVolume? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -43,6 +44,7 @@ class PlaybackService : MediaSessionService() {
             .build()
 
         tracker = ListenTracker(player, AppDatabase.get(this).statsDao(), prefs, scope)
+        balance = BalanceVolume(this, player, AppDatabase.get(this).loudnessDao(), prefs, scope)
         session = MediaSession.Builder(this, player).build()
     }
 
@@ -59,6 +61,8 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         tracker?.release()
         tracker = null
+        balance?.release()
+        balance = null
         session?.run {
             player.release()
             release()

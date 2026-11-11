@@ -105,6 +105,7 @@ import com.lumen.android.library.LibraryViewModel
 import com.lumen.android.library.albumArt
 import com.lumen.android.library.fold
 import com.lumen.android.model.Track
+import com.lumen.android.playback.BalanceVolume
 import com.lumen.android.playback.ListenTracker
 import com.lumen.android.playback.PlayerActions
 import com.lumen.android.playback.PlayerState
@@ -1027,6 +1028,7 @@ private fun SettingsScreen(
     val scope = rememberCoroutineScope()
 
     var statsEnabled by remember { mutableStateOf(prefs.getBoolean(ListenTracker.KEY_STATS_ENABLED, true)) }
+    var balance by remember { mutableStateOf(prefs.getBoolean(BalanceVolume.KEY_BALANCE, true)) }
     var confirmClear by remember { mutableStateOf(false) }
     var cleared by remember { mutableStateOf(false) }
     var fps by remember { mutableStateOf(prefs.getInt("vizFps", 60)) }
@@ -1100,6 +1102,18 @@ private fun SettingsScreen(
                         )
                     }
                 }
+
+                SectionTitle("PLAYBACK")
+                SettingSwitch(
+                    "Balance volume",
+                    "Plays every song at about the same loudness, so quiet ones are turned up and loud ones down. " +
+                        "Songs are measured in the background the first time.",
+                    balance,
+                ) {
+                    balance = it
+                    prefs.edit().putBoolean(BalanceVolume.KEY_BALANCE, it).apply()
+                }
+                Spacer(Modifier.height(16.dp))
 
                 SectionTitle("LISTENING STATS")
                 SettingSwitch(

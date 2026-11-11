@@ -1,6 +1,8 @@
 package com.lumen.android
 
 import com.lumen.android.library.fold
+import com.lumen.android.playback.R128
+import com.lumen.android.playback.gainFor
 import com.lumen.android.theme.exportTokens
 import com.lumen.android.theme.parseTokens
 import com.lumen.android.update.compareVersions
@@ -23,6 +25,35 @@ class LogicTest {
         assertEquals("елка", fold("Ёлка"))
         assertEquals("beyonce", fold("Beyoncé"))
         assertEquals("rob co chcesz", fold("Rób Co Chcesz"))
+    }
+
+    @Test
+    fun r128MeasuresASine() {
+        // A stereo 1 kHz sine at −20 dBFS measures about −20 LUFS, like on desktop.
+        val rate = 44_100
+        val meter = R128(rate, 2)
+        val buf = FloatArray(rate * 2)
+        for (second in 0 until 5) {
+            for (i in 0 until rate) {
+                val v = (0.1 * sin((second * rate + i) * 1000.0 * 2 * PI / rate)).toFloat()
+                buf[2 * i] = v
+                buf[2 * i + 1] = v
+            }
+            meter.add(buf, buf.size)
+        }
+        assertEquals(-20.0, meter.integrated()!!, 0.5)
+        assertEquals(0.1, meter.peak, 0.001)
+        assertEquals(null, R128(rate, 2).also { it.add(FloatArray(rate * 2), rate * 2) }.integrated())
+    }
+
+    @Test
+    fun balanceGainTurnsLoudDownAndQuietUpWithoutClipping() {
+        fun db(g: Double) = 20 * kotlin.math.log10(g)
+        assertEquals(-6.0, db(gainFor(-10.0, 1.0)), 1e-9)
+        assertEquals(6.0, db(gainFor(-22.0, 0.2)), 1e-9)
+        assertEquals(12.0, db(gainFor(-40.0, 0.01)), 1e-9)
+        assertEquals(0.89 / 0.6, gainFor(-22.0, 0.6), 1e-9)
+        assertEquals(1.0, gainFor(-22.0, 1.0), 1e-9)
     }
 
     @Test
