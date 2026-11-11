@@ -12,6 +12,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -22,6 +23,17 @@ class LogicTest {
         assertEquals("елка", fold("Ёлка"))
         assertEquals("beyonce", fold("Beyoncé"))
         assertEquals("rob co chcesz", fold("Rób Co Chcesz"))
+    }
+
+    @Test
+    fun foldKeepsLettersWholeOutsideLatin() {
+        assertEquals(fold("が"), fold("ガ"))
+        assertNotEquals(fold("か"), fold("が"))
+        assertEquals(fold("ガル"), fold("ｶﾞﾙ"))
+        assertEquals("ひかる", fold("ヒカル"))
+        assertEquals("米津玄師", fold("米津玄師"))
+        assertEquals("아이유", fold("아이유"))
+        assertNotEquals(fold("शकर"), fold("शंकर"))
     }
 
     @Test
