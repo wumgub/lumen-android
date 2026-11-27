@@ -29,4 +29,6 @@ val APP_ICONS = listOf(
     AppIcon("indigo", "Indigo", R.mipmap.ic_launcher_indigo, ".icon.Indigo", 0x474DF5, false),
     AppIcon("purple", "Purple", R.mipmap.ic_launcher_purple, ".icon.Purple", 0x9847F5, false),
     AppIcon("pink", "Pink", R.mipmap.ic_launcher_pink, ".icon.Pink", 0xF547BB, false),
+    AppIcon("black", "Black", R.mipmap.ic_launcher_black, ".icon.Black", 0xFFFFFF, false),
+    AppIcon("white", "White", R.mipmap.ic_launcher_white, ".icon.White", 0x141414, false),
 )

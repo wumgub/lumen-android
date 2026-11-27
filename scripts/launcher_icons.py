@@ -41,10 +41,12 @@ BLACK, WHITE = (0, 0, 0), (255, 255, 255)
 
 
 class Icon:
-    def __init__(self, id, label, tile, bars, glow, light=False, theme=False):
+    def __init__(self, id, label, tile, bars, glow, light=False, theme=False, haze=None):
         self.id, self.label = id, label
         self.tile, self.bars, self.glow = tile, bars, glow  # 3 stops, 3 stops, 2 colours
         self.light, self.theme = light, theme
+        # How strong the glow around the bars is.
+        self.haze = haze if haze is not None else (0.6 if light else 1.0)
 
     @property
     def res(self):
@@ -82,7 +84,13 @@ ICONS = [
     ("red", "Red", 355), ("orange", "Orange", 22), ("amber", "Amber", 40), ("yellow", "Yellow", 52),
     ("lime", "Lime", 82), ("green", "Green", 140), ("teal", "Teal", 170), ("cyan", "Cyan", 190),
     ("blue", "Blue", 215), ("indigo", "Indigo", 238), ("purple", "Purple", 268), ("pink", "Pink", 320),
-]]
+]] + [
+    # Plain ones: white bars on black, and black on white.
+    Icon("black", "Black", ((0x1c, 0x1c, 0x1c), (0x0b, 0x0b, 0x0b), BLACK), (WHITE, WHITE, (0xe8, 0xe8, 0xe8)),
+         (WHITE, WHITE), haze=0.35),
+    Icon("white", "White", (WHITE, (0xf6, 0xf6, 0xf6), (0xea, 0xea, 0xea)), ((0x14, 0x14, 0x14), (0x14, 0x14, 0x14), BLACK),
+         (BLACK, BLACK), light=True, haze=0),
+]
 
 # The five bars, as (x, top of the straight part, its length), in the desktop
 # icon's 1024 space.
@@ -127,7 +135,7 @@ def background(icon):
 
 def foreground(icon):
     g1, g2 = icon.glow
-    strength = 0.6 if icon.light else 1.0
+    strength = icon.haze
     out = [HEAD, '    <group android:translateX="160" android:translateY="160">\n',
            '        <path android:pathData="M172,540 a340,340 0 1 1 680,0 a340,340 0 1 1 -680,0 z">\n',
            gradient("radial", 'android:centerX="512" android:centerY="540" android:gradientRadius="340"',
