@@ -689,6 +689,26 @@ private fun DetailScreen(
     }
 }
 
+/** The Cover | Visualizer switch at the top of Now Playing. */
+@Composable
+private fun CoverVizSwitch(showViz: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.clip(RoundedCornerShape(50)).background(LumenBg2).padding(3.dp)) {
+        listOf(false to "Cover", true to "Visualizer").forEach { (viz, label) ->
+            val on = viz == showViz
+            Text(
+                label,
+                color = if (on) LumenOnAccent else LumenDim,
+                fontSize = 12.sp,
+                fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
+                modifier = Modifier.clip(RoundedCornerShape(50))
+                    .background(if (on) LumenAccent else Color.Transparent)
+                    .clickable { onChange(viz) }
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun MiniPlayer(playerState: PlayerState, actions: PlayerActions, onExpand: () -> Unit) {
     val title by playerState.title.collectAsState()
@@ -769,16 +789,11 @@ private fun NowPlaying(
                 IconButton(onClick = onClose) {
                     Icon(painterResource(R.drawable.ic_back), contentDescription = "Close", tint = LumenFg)
                 }
-                Text("Now playing", color = LumenDim, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                IconButton(onClick = {
-                    showViz = !showViz
-                    prefs.edit().putBoolean("showViz", showViz).apply()
-                }) {
-                    Icon(
-                        painterResource(if (showViz) R.drawable.ic_art else R.drawable.ic_viz),
-                        contentDescription = if (showViz) "Show artwork" else "Show visualizer",
-                        tint = LumenDim,
-                    )
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    CoverVizSwitch(showViz) {
+                        showViz = it
+                        prefs.edit().putBoolean("showViz", it).apply()
+                    }
                 }
                 IconButton(onClick = onQueue) {
                     Icon(painterResource(R.drawable.ic_queue), contentDescription = "Queue", tint = LumenDim)
