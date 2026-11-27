@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -763,7 +764,7 @@ private fun NowPlaying(
     }
 
     Surface(color = LumenBg, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp)) {
+        Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onClose) {
                     Icon(painterResource(R.drawable.ic_back), contentDescription = "Close", tint = LumenFg)
@@ -959,7 +960,7 @@ internal fun Artwork(uri: Uri?, modifier: Modifier, cornerDp: Dp = 6.dp, decodeP
 @Composable
 private fun PermissionScreen(onRequest: () -> Unit) {
     Column(
-        Modifier.fillMaxSize().background(LumenBg).padding(32.dp),
+        Modifier.fillMaxSize().background(LumenBg).systemBarsPadding().padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -1042,7 +1043,7 @@ private fun SettingsScreen(
 
     Box(Modifier.fillMaxSize()) {
         Surface(color = LumenBg, modifier = Modifier.fillMaxSize()) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+            Column(Modifier.fillMaxSize().systemBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onClose) {
                         Icon(painterResource(R.drawable.ic_back), contentDescription = "Back", tint = LumenFg)
@@ -1251,7 +1252,7 @@ private fun CustomThemeEditor(themeController: ThemeController, onClose: () -> U
     val clipboard = LocalClipboardManager.current
 
     Surface(color = LumenBg, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().systemBarsPadding()) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,

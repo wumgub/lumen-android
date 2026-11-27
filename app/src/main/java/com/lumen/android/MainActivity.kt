@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -81,6 +82,10 @@ class MainActivity : ComponentActivity() {
         playerState.volume.value = Volume.level
         // First launch after updating from the WebView app: bring its data over.
         WebViewImport.runIfNeeded(this, themeController)
+        // Draw under the status and navigation bars, so the tab bar reaches
+        // the bottom edge behind the gesture handle instead of sitting on a
+        // strip of its own. Screens pad themselves with the bars' insets.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
             ThemeHost(themeController = themeController, playerState = playerState) {

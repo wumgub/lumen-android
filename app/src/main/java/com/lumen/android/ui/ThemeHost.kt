@@ -85,9 +85,14 @@ fun ThemeHost(
     if (!view.isInEditMode) {
         SideEffect {
             (context as? Activity)?.window?.let { window ->
-                window.statusBarColor = colors.bg.toArgb()
-                window.navigationBarColor = colors.bg.toArgb()
-                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !colors.isDark
+                // The app draws behind both bars (see MainActivity), so they're
+                // see-through and only their icons follow the theme.
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+                val bars = WindowCompat.getInsetsController(window, view)
+                bars.isAppearanceLightStatusBars = !colors.isDark
+                bars.isAppearanceLightNavigationBars = !colors.isDark
             }
         }
     }
