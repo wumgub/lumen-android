@@ -4,6 +4,9 @@ import androidx.media3.common.C
 import com.lumen.android.library.fold
 import com.lumen.android.playback.AudioTap
 import com.lumen.android.playback.R128
+import com.lumen.android.theme.APP_ICONS
+import com.lumen.android.theme.IconSwitcher
+import com.lumen.android.theme.PRESET_TOKENS
 import com.lumen.android.playback.gainFor
 import com.lumen.android.theme.exportTokens
 import com.lumen.android.theme.parseTokens
@@ -127,5 +130,19 @@ class LogicTest {
         out.forEach { assertEquals(0.125f, it, 1e-4f) }
         AudioTap.setPlaying(false)
         AudioTap.enabled = false
+    }
+
+    @Test
+    fun everyThemeHasAnIcon() {
+        val ids = APP_ICONS.map { it.id }
+        for (theme in PRESET_TOKENS.keys + "blackout") assertTrue(theme, theme in ids)
+        assertEquals(ids.size, ids.toSet().size)
+        assertEquals(1, APP_ICONS.count { it.alias == ".MainActivity" })
+    }
+
+    @Test
+    fun customPicksTheClosestIcon() {
+        assertEquals("red", IconSwitcher.nearest(0xF04040))
+        assertEquals("green", IconSwitcher.nearest(0x30E890))
     }
 }

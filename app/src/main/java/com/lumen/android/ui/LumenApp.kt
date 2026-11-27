@@ -13,6 +13,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -77,6 +78,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -91,6 +93,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -111,7 +114,10 @@ import com.lumen.android.playback.ListenTracker
 import com.lumen.android.playback.PlayerActions
 import com.lumen.android.playback.PlayerState
 import com.lumen.android.playback.Volume
+import com.lumen.android.theme.APP_ICONS
+import com.lumen.android.theme.AppIcon
 import com.lumen.android.theme.EDITABLE_TOKENS
+import com.lumen.android.theme.IconSwitcher
 import com.lumen.android.theme.START_FROM
 import com.lumen.android.theme.ThemeController
 import com.lumen.android.theme.exportTokens
@@ -121,8 +127,10 @@ import com.lumen.android.update.checkForUpdate
 import com.lumen.android.viz.Visualizer
 import com.lumen.android.viz.VizKind
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private sealed interface Detail {
     data class Artist(val name: String) : Detail
@@ -175,6 +183,20 @@ fun LumenApp(playerState: PlayerState, actions: PlayerActions, themeController: 
     val playlistVm: PlaylistViewModel = viewModel()
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("lumen", Context.MODE_PRIVATE) }
+
+    // Keep the launcher icon in step with the theme and the icon settings.
+    val themeId by themeController.themeId.collectAsState()
+    val iconFollows by themeController.iconFollowsTheme.collectAsState()
+    val iconChoice by themeController.iconChoice.collectAsState()
+    val customIcon by themeController.customIcon.collectAsState()
+    LaunchedEffect(themeId, iconFollows, iconChoice, customIcon) {
+        if (themeId == "custom" && customIcon == null) {
+            // Settle Custom's icon once, so editing its colours doesn't keep swapping it.
+            themeController.setCustomIcon(themeController.customIconId())
+        } else {
+            withContext(Dispatchers.IO) { IconSwitcher.apply(context, themeController.iconId()) }
+        }
+    }
 
     var granted by remember { mutableStateOf(hasAudioPermission(context)) }
     val launcher = rememberLauncherForActivityResult(
@@ -1039,6 +1061,8 @@ private fun SettingsScreen(
     val selected by themeController.themeId.collectAsState()
     val fromArt by themeController.blackoutFromArt.collectAsState()
     val customTokens by themeController.customTokens.collectAsState()
+    val iconFollows by themeController.iconFollowsTheme.collectAsState()
+    val iconChoice by themeController.iconChoice.collectAsState()
     var showEditor by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -1096,6 +1120,23 @@ private fun SettingsScreen(
                         Text("Edit custom theme")
                     }
                 }
+
+                SectionTitle("APP ICON")
+                SettingSwitch(
+                    "Match the theme",
+                    "Each theme has its own icon (Custom's is picked in its editor). Off lets you pick any of them.",
+                    iconFollows,
+                ) { themeController.setIconFollowsTheme(it) }
+                if (!iconFollows) {
+                    Spacer(Modifier.height(10.dp))
+                    IconPicker(iconChoice) { themeController.setIconChoice(it) }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Some home screens remove Lumen's shortcut when the icon changes. It's still in your app drawer.",
+                    color = LumenDim,
+                    fontSize = 12.sp,
+                )
 
                 SectionTitle("VISUALIZER")
                 Text("Frame rate", color = LumenFg, fontSize = 15.sp)
@@ -1195,6 +1236,38 @@ private fun SettingsScreen(
     }
 }
 
+/** Every launcher icon, theme ones first, as a wrapping grid of tappable thumbnails. */
+@Composable
+private fun IconPicker(selected: String, onPick: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        APP_ICONS.chunked(5).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { icon ->
+                    IconThumb(icon, icon.id == selected) { onPick(icon.id) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IconThumb(icon: AppIcon, selected: Boolean, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val bitmap = remember(icon.id) {
+        ContextCompat.getDrawable(context, icon.mipmap)?.toBitmap(144, 144)?.asImageBitmap()
+    }
+    Box(
+        Modifier.size(54.dp).clip(RoundedCornerShape(14.dp))
+            .border(2.dp, if (selected) LumenAccent else Color.Transparent, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+    ) {
+        bitmap?.let {
+            Image(it, contentDescription = icon.label, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(11.dp)))
+        }
+    }
+}
+
 @Composable
 private fun SettingSwitch(title: String, hint: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1261,6 +1334,7 @@ private fun ThemeSwatch(
 @Composable
 private fun CustomThemeEditor(themeController: ThemeController, onClose: () -> Unit) {
     val tokens by themeController.customTokens.collectAsState()
+    val customIcon by themeController.customIcon.collectAsState()
     var editingKey by remember { mutableStateOf<String?>(null) }
     var importText by remember { mutableStateOf("") }
     var importError by remember { mutableStateOf(false) }
@@ -1313,6 +1387,11 @@ private fun CustomThemeEditor(themeController: ThemeController, onClose: () -> U
                         Text(hexStr.uppercase(), color = LumenDim, fontSize = 12.sp)
                     }
                 }
+
+                Spacer(Modifier.height(20.dp))
+                Text("APP ICON", color = LumenDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                IconPicker(customIcon ?: themeController.customIconId(tokens)) { themeController.setCustomIcon(it) }
 
                 Spacer(Modifier.height(20.dp))
                 Text("SHARE", color = LumenDim, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)

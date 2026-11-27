@@ -85,7 +85,7 @@ fun ThemeHost(
     if (!view.isInEditMode) {
         SideEffect {
             (context as? Activity)?.window?.let { window ->
-                // The app draws behind both bars (see MainActivity), so they're
+                // The app draws behind both bars (see LumenActivity), so they're
                 // see-through and only their icons follow the theme.
                 window.statusBarColor = android.graphics.Color.TRANSPARENT
                 window.navigationBarColor = android.graphics.Color.TRANSPARENT

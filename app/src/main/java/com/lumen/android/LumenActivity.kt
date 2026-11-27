@@ -25,7 +25,7 @@ import com.lumen.android.theme.ThemeController
 import com.lumen.android.ui.LumenApp
 import com.lumen.android.ui.ThemeHost
 
-class MainActivity : ComponentActivity() {
+class LumenActivity : ComponentActivity() {
 
     private val playerState = PlayerState()
     private lateinit var themeController: ThemeController

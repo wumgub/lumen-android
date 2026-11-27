@@ -2,7 +2,7 @@ package com.lumen.android.playback
 
 import com.lumen.android.model.Track
 
-/** Callbacks the UI uses to drive playback, supplied by MainActivity. */
+/** Callbacks the UI uses to drive playback, supplied by LumenActivity. */
 class PlayerActions(
     val play: (tracks: List<Track>, index: Int) -> Unit,
     val toggle: () -> Unit,
