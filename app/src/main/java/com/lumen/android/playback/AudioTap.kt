@@ -42,13 +42,18 @@ object AudioTap {
     fun write(buffer: ByteBuffer, presentationUs: Long) {
         if (!enabled) return
         val enc = encoding
+        // Decoded audio is mostly 16-bit or float, but WAV and AIFF reach the
+        // sink as they are in the file: 8, 24 or 32-bit, or big-endian.
         val bytes = when (enc) {
-            C.ENCODING_PCM_16BIT -> 2
-            C.ENCODING_PCM_FLOAT -> 4
+            C.ENCODING_PCM_8BIT -> 1
+            C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> 2
+            C.ENCODING_PCM_24BIT -> 3
+            C.ENCODING_PCM_32BIT, C.ENCODING_PCM_FLOAT -> 4
             else -> return
         }
         val ch = channels
-        val b = buffer.duplicate().order(ByteOrder.nativeOrder())
+        val order = if (enc == C.ENCODING_PCM_16BIT_BIG_ENDIAN) ByteOrder.BIG_ENDIAN else ByteOrder.LITTLE_ENDIAN
+        val b = buffer.duplicate().order(order)
         val frames = b.remaining() / (bytes * ch)
         if (frames <= 0) return
         val out = FloatArray(frames)
@@ -56,13 +61,27 @@ object AudioTap {
         val scale = 1f / ch
         for (f in 0 until frames) {
             var sum = 0f
-            for (c in 0 until ch) sum += if (enc == C.ENCODING_PCM_16BIT) b.short / 32768f else b.float
+            for (c in 0 until ch) sum += sample(b, enc)
             out[f] = sum * scale
         }
         synchronized(lock) {
             chunks.addLast(Chunk(presentationUs, out, rate))
             while (chunks.size > 1 && chunks.first().startUs < presentationUs - KEEP_US) chunks.removeFirst()
         }
+    }
+
+    /** The next sample in [b], from -1 to 1. */
+    private fun sample(b: ByteBuffer, enc: Int): Float = when (enc) {
+        C.ENCODING_PCM_8BIT -> ((b.get().toInt() and 0xff) - 128) / 128f
+        C.ENCODING_PCM_24BIT -> {
+            val lo = b.get().toInt() and 0xff
+            val mid = b.get().toInt() and 0xff
+            val hi = b.get().toInt() // keeps the sign
+            ((hi shl 16) or (mid shl 8) or lo) / 8_388_608f
+        }
+        C.ENCODING_PCM_32BIT -> b.int / 2_147_483_648f
+        C.ENCODING_PCM_FLOAT -> b.float
+        else -> b.short / 32768f
     }
 
     fun clock(positionUs: Long) {

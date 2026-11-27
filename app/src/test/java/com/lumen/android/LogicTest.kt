@@ -1,6 +1,8 @@
 package com.lumen.android
 
+import androidx.media3.common.C
 import com.lumen.android.library.fold
+import com.lumen.android.playback.AudioTap
 import com.lumen.android.playback.R128
 import com.lumen.android.playback.gainFor
 import com.lumen.android.theme.exportTokens
@@ -17,6 +19,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class LogicTest {
     @Test
@@ -101,5 +105,27 @@ class LogicTest {
         s.analyse(1 / 60f)
         assertTrue(s.frame.freq.all { it == 0 })
         assertTrue(s.frame.wave.all { it == 128 })
+    }
+
+    @Test
+    fun theTapReads24BitAudio() {
+        // A 24-bit WAV: stereo frames of +half and -quarter scale.
+        val b = ByteBuffer.allocate(4 * 6).order(ByteOrder.LITTLE_ENDIAN)
+        repeat(4) {
+            for (v in intArrayOf(4_194_304, -2_097_152)) {
+                b.put((v and 0xff).toByte()).put((v shr 8 and 0xff).toByte()).put((v shr 16).toByte())
+            }
+        }
+        b.flip()
+        AudioTap.enabled = true
+        AudioTap.configure(48_000, 2, C.ENCODING_PCM_24BIT)
+        AudioTap.write(b, 0)
+        AudioTap.clock(1_000_000)
+        AudioTap.setPlaying(true)
+        val out = FloatArray(4)
+        assertTrue(AudioTap.read(out))
+        out.forEach { assertEquals(0.125f, it, 1e-4f) }
+        AudioTap.setPlaying(false)
+        AudioTap.enabled = false
     }
 }
