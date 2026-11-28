@@ -83,7 +83,9 @@ class BalanceVolume(
     private fun start() {
         if (measuring?.isActive == true) return
         measuring = scope.launch(worker) {
-            val stored = dao.all().associateBy { it.mediaId }
+            // Measurements from before MEASURE_VERSION are redone: older ones
+            // misread hi-res songs as noise and turned them right down.
+            val stored = dao.all().filter { it.fileKey.startsWith("$MEASURE_VERSION:") }.associateBy { it.mediaId }
             for (row in stored.values) {
                 val lufs = row.lufs ?: continue
                 gains[row.mediaId] = gainFor(lufs, row.peak ?: 1.0)
@@ -102,7 +104,7 @@ class BalanceVolume(
         }
     }
 
-    /** Every song with its size and modified time, as "size:modified". */
+    /** Every song with its size and modified time, as "version:size:modified". */
     private fun songs(): List<Pair<Long, String>> {
         val out = ArrayList<Pair<Long, String>>()
         val projection = arrayOf(
@@ -111,7 +113,7 @@ class BalanceVolume(
             MediaStore.Audio.Media.DATE_MODIFIED,
         )
         context.contentResolver.query(collection(), projection, "${MediaStore.Audio.Media.IS_MUSIC} != 0", null, null)?.use { c ->
-            while (c.moveToNext()) out.add(c.getLong(0) to "${c.getLong(1)}:${c.getLong(2)}")
+            while (c.moveToNext()) out.add(c.getLong(0) to "$MEASURE_VERSION:${c.getLong(1)}:${c.getLong(2)}")
         }
         return out
     }
@@ -124,5 +126,6 @@ class BalanceVolume(
 
     companion object {
         const val KEY_BALANCE = "balanceVolume"
+        private const val MEASURE_VERSION = "v2"
     }
 }

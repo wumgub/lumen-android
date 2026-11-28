@@ -5,6 +5,8 @@ import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -45,7 +47,34 @@ class PlaybackService : MediaSessionService() {
 
         tracker = ListenTracker(player, AppDatabase.get(this).statsDao(), prefs, scope)
         balance = BalanceVolume(this, player, AppDatabase.get(this).loudnessDao(), prefs, scope)
+        player.addListener(SkipBroken(player))
         session = MediaSession.Builder(this, player).build()
+    }
+
+    /**
+     * A song that can't be played (gone, half-synced, or a format the phone
+     * can't decode) would leave the player stopped with an error. Move on to
+     * the next one instead, until every song in the queue has been tried.
+     */
+    private class SkipBroken(private val player: ExoPlayer) : Player.Listener {
+        private var failures = 0
+
+        override fun onPlayerError(error: PlaybackException) {
+            lastFailed = player.currentMediaItem?.mediaMetadata?.title?.toString()
+            failures++
+            if (failures >= player.mediaItemCount || !player.hasNextMediaItem()) {
+                // Nothing left to try. Play prepares it again.
+                failures = 0
+                return
+            }
+            player.seekToNextMediaItem()
+            player.prepare()
+            player.play()
+        }
+
+        override fun onPlaybackStateChanged(state: Int) {
+            if (state == Player.STATE_READY) failures = 0
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -74,5 +103,8 @@ class PlaybackService : MediaSessionService() {
 
     companion object {
         const val KEY_VOLUME = "volume"
+
+        /** The title of the last song that couldn't be played, for the app's message. */
+        @Volatile var lastFailed: String? = null
     }
 }

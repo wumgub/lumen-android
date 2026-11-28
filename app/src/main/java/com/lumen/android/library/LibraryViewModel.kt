@@ -1,7 +1,11 @@
 package com.lumen.android.library
 
 import android.app.Application
+import android.database.ContentObserver
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lumen.android.data.AlbumCoverEntity
@@ -11,6 +15,8 @@ import com.lumen.android.model.Track
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,7 +73,35 @@ class LibraryViewModel(private val app: Application) : AndroidViewModel(app) {
             val list = withContext(Dispatchers.IO) { scanner.scan() }
             scanned.value = list
             _scanning.value = false
+            watch()
         }
+    }
+
+    // Songs come and go while the app is open (Syncthing, downloads), and a
+    // replaced file gets a new id, so the old one won't play. Scan again a
+    // moment after MediaStore changes, once the burst of changes settles.
+    private var rescan: Job? = null
+    private var observer: ContentObserver? = null
+
+    private fun watch() {
+        if (observer != null) return
+        val o = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                rescan?.cancel()
+                rescan = viewModelScope.launch {
+                    delay(2_000)
+                    val list = withContext(Dispatchers.IO) { scanner.scan() }
+                    scanned.value = list
+                }
+            }
+        }
+        app.contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, o)
+        observer = o
+    }
+
+    override fun onCleared() {
+        observer?.let { app.contentResolver.unregisterContentObserver(it) }
+        super.onCleared()
     }
 
     private suspend fun edit(ids: List<Long>, change: (OverrideEntity) -> OverrideEntity) {

@@ -3,11 +3,13 @@ package com.lumen.android
 import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
@@ -53,6 +55,13 @@ class LumenActivity : ComponentActivity() {
 
         override fun onRepeatModeChanged(repeatMode: Int) {
             playerState.repeatMode.value = repeatMode
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            // The service skips past it; say which song and why, so it can be looked into.
+            val title = PlaybackService.lastFailed ?: "a song"
+            val why = error.errorCodeName.removePrefix("ERROR_CODE_").lowercase().replace('_', ' ')
+            Toast.makeText(this@LumenActivity, "Couldn't play $title ($why)", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -178,7 +187,13 @@ class LumenActivity : ComponentActivity() {
 
     private fun togglePlay() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) {
+            c.pause()
+        } else {
+            // After an error the player sits idle until it's prepared again.
+            if (c.playbackState == Player.STATE_IDLE) c.prepare()
+            c.play()
+        }
     }
 
     private fun cycleRepeat() {

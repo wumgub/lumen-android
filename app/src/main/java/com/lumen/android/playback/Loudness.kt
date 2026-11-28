@@ -162,12 +162,27 @@ fun measureLoudness(context: Context, uri: Uri): Loudness? {
                     if (out != null && info.size > 0) {
                         out.position(info.offset)
                         out.limit(info.offset + info.size)
-                        val count = if (encoding == AudioFormat.ENCODING_PCM_FLOAT) info.size / 4 else info.size / 2
+                        // Hi-res files can decode to 24 or 32-bit, not just 16-bit or float.
+                        val bytes = when (encoding) {
+                            AudioFormat.ENCODING_PCM_FLOAT, AudioFormat.ENCODING_PCM_32BIT -> 4
+                            AudioFormat.ENCODING_PCM_24BIT_PACKED -> 3
+                            AudioFormat.ENCODING_PCM_16BIT -> 2
+                            else -> return null
+                        }
+                        val count = info.size / bytes
                         if (floats.size < count) floats = FloatArray(count)
-                        if (encoding == AudioFormat.ENCODING_PCM_FLOAT) {
-                            for (k in 0 until count) floats[k] = out.float
-                        } else {
-                            for (k in 0 until count) floats[k] = out.short / 32768f
+                        for (k in 0 until count) {
+                            floats[k] = when (encoding) {
+                                AudioFormat.ENCODING_PCM_FLOAT -> out.float
+                                AudioFormat.ENCODING_PCM_32BIT -> out.int / 2_147_483_648f
+                                AudioFormat.ENCODING_PCM_24BIT_PACKED -> {
+                                    val lo = out.get().toInt() and 0xff
+                                    val mid = out.get().toInt() and 0xff
+                                    val hi = out.get().toInt()
+                                    ((hi shl 16) or (mid shl 8) or lo) / 8_388_608f
+                                }
+                                else -> out.short / 32768f
+                            }
                         }
                         m.add(floats, count)
                     }
